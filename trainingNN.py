@@ -10,7 +10,7 @@ from torch.utils.tensorboard import SummaryWriter
 # Generate ActiveForceLength data
 x = np.linspace(0.0, 2.0, 1000)
 arr_loaded = np.load('ActiveForceLengthData.npy')
-force = arr_loaded[1]
+force = arr_loaded[0]
 
 # Convert data to PyTorch tensors
 length_tensor = torch.tensor(x, dtype=torch.float32).unsqueeze(1)
@@ -18,7 +18,9 @@ force_tensor = torch.tensor(force, dtype=torch.float32).unsqueeze(1)
 
 # Create a TensorDataset and DataLoader
 dataset = TensorDataset(length_tensor, force_tensor)
-train_loader = DataLoader(dataset, batch_size=32, shuffle=True)
+train, valid = torch.utils.data.random_split(dataset,[0.8,0.2])
+train_loader = DataLoader(train, batch_size=32)
+valid_loader = DataLoader(valid, batch_size=32)
 
 # Define MLP model
 class MLP(nn.Module):
@@ -43,7 +45,7 @@ input_size = 1
 hidden_size = 64
 output_size = 1
 
-model = MLP(input_size, hidden_size, output_size, 20)
+model = MLP(input_size, hidden_size, output_size, 6)
 
 # Define loss function and optimizer
 criterion = nn.MSELoss()
@@ -54,26 +56,37 @@ writer = SummaryWriter('runs/ActiveForceLengthMLP')
 
 # Training loop with TensorBoard logging
 num_epochs = 100
+min_valid_loss = np.inf
 
 for epoch in range(num_epochs):
-    model.train()
-    running_loss = 0.0
+    train_loss = 0.0
+    model.train()     # Optional when not using Model Specific layer
     for inputs, labels in train_loader:
         optimizer.zero_grad()
-        outputs = model(inputs)
-        loss = criterion(outputs, labels)
+        target = model(inputs)
+        loss = criterion(target,labels)
         loss.backward()
         optimizer.step()
-        running_loss += loss.item()
-    
-    avg_loss = running_loss / len(train_loader)
-    print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {avg_loss:.4f}')
-    
-    # Log the average loss to TensorBoard
-    writer.add_scalar('Training Loss', avg_loss, epoch)
+        train_loss += loss.item()
+    avg_loss = train_loss / len(train_loader)
 
-# After training, evaluate the model
-model.eval()
+    valid_loss = 0.0
+    model.eval()     # Optional when not using Model Specific layer
+    for data, labels in validloader:  
+        target = model(data)
+        loss = criterion(target,labels)
+        valid_loss += loss.item()
+    avg_valid_loss = valid_loss / len(valid_loader)
+
+    print(f'Epoch [{epoch+1}/{num_epochs}], Train Loss: {avg_loss:.4f}, Validation Loss: {avg_valid_loss:.4f}')
+    
+    # Log the logged average loss to TensorBoard
+    writer.add_scalar('Logged Training Loss', np.log(avg_loss), epoch)
+    writer.add_scalar('Logged Validation Loss', np.log(avg_valid_loss), epoch)
+
+# Close the TensorBoard writer
+writer.close()
+
 with torch.no_grad():
     predicted_force = model(length_tensor).numpy()
 
@@ -88,6 +101,3 @@ plt.show()
 
 # Save the model
 # torch.save(model.state_dict(), 'ActiveForceLengthMLP.pth')
-
-# Close the TensorBoard writer
-writer.close()
