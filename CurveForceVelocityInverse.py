@@ -84,4 +84,4 @@ class CurveForceVelocityInverse(CurveBase):
         np.save('ForceVelocityInverseData.npy', [y0,y1,y2])
         file.close()
 
-CurveForceVelocityInverse.test()
+#CurveForceVelocityInverse.test()

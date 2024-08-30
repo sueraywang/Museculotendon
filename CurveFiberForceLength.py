@@ -85,4 +85,4 @@ class CurveFiberForceLength(CurveBase):
         np.save('PassiveForceLengthData.npy', [y0,y1,y2])
         file.close()
 
-CurveFiberForceLength.test()
+#CurveFiberForceLength.test()

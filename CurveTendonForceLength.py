@@ -67,4 +67,4 @@ class CurveTendonForceLength(CurveBase):
         np.save('TendonForceLengthData.npy', [y0,y1,y2])
         file.close()
 
-CurveTendonForceLength.test()
+#CurveTendonForceLength.test()

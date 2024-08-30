@@ -22,6 +22,8 @@ class SmoothSegmentedFunction:
         return np.hstack((self.mXVec_[0, :], self.mXVec_[-1, -1]))
 
     def calcValue(self, x):
+        if (isinstance(x,(float,int))):
+            x = [x]
         yVal = np.zeros_like(x)
         for k, xk in enumerate(x):
             if self.x0_ <= xk <= self.x1_:
@@ -33,6 +35,8 @@ class SmoothSegmentedFunction:
                     yVal[k] = self.y0_ + self.dydx0_ * (xk - self.x0_)
                 else:
                     yVal[k] = self.y1_ + self.dydx1_ * (xk - self.x1_)
+        if (len(yVal) == 1):
+            yVal = yVal[0]
         return yVal
 
     def calcDerivative(self, x, order):

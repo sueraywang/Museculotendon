@@ -109,4 +109,4 @@ class CurveForceVelocity(CurveBase):
         np.save('ForceVelocityData.npy', [y0,y1,y2])
         file.close()
 
-CurveForceVelocity.test()
+#CurveForceVelocity.test()

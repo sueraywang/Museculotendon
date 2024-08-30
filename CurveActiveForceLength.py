@@ -48,4 +48,4 @@ class CurveActiveForceLength(CurveBase):
         np.save('ActiveForceLengthData.npy', [y0,y1,y2])
         file.close()
 
-CurveActiveForceLength.test()
+#CurveActiveForceLength.test()
