@@ -57,7 +57,7 @@ writer = SummaryWriter('runs/ActiveForceLengthMLP')
 # Training loop with TensorBoard logging
 num_epochs = 100
 min_valid_loss = np.inf
-
+r = 5
 for epoch in range(num_epochs):
     train_loss = 0.0
     model.train()     # Optional when not using Model Specific layer
@@ -81,8 +81,7 @@ for epoch in range(num_epochs):
     print(f'Epoch [{epoch+1}/{num_epochs}], Train Loss: {avg_loss:.4f}, Validation Loss: {avg_valid_loss:.4f}')
     
     # Log the logged average loss to TensorBoard
-    writer.add_scalar('Logged Training Loss', np.log(avg_loss), epoch)
-    writer.add_scalar('Logged Validation Loss', np.log(avg_valid_loss), epoch)
+    writer.add_scalars('Losses', {'Training Loss':avg_loss,'Validation Loss':avg_valid_loss}, epoch)
 
 # Close the TensorBoard writer
 writer.close()
