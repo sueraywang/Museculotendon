@@ -72,7 +72,7 @@ for epoch in range(num_epochs):
 
     valid_loss = 0.0
     model.eval()     # Optional when not using Model Specific layer
-    for data, labels in validloader:  
+    for data, labels in valid_loader:  
         target = model(data)
         loss = criterion(target,labels)
         valid_loss += loss.item()
