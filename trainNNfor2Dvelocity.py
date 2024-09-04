@@ -5,19 +5,37 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 from torch.utils.tensorboard import SummaryWriter
+from testMuscle import *
 
-# Generate ActiveForceLength data
-x = np.linspace(0.0, 2.0, 1000)
-arr_loaded = np.load('ActiveForceLengthData.npy')
-force = arr_loaded[0]
+# # Generate data
+# act = 1
+# sample_size = 10
+# lMtilde = np.random.uniform(.45, 1.85, sample_size)
+# lTtilde = np.random.uniform(.99, 1.04, sample_size)
+# X, Y = np.meshgrid(lMtilde, lTtilde)
+# values = []
+
+# for x, y in zip(X, Y):
+#     for x1, y1 in zip(x, y):
+#         values.append(calcVelTilde(x1, y1, act, params, curves))
+
+# Z = np.reshape(np.array(values), (-1, sample_size))
+# X_train = np.vstack([X.ravel(), Y.ravel()]).T
+# y_train = Z.ravel()
+
+# read in data
+DF = pd.read_csv('velocityData.csv')
+X_train = DF[["0", "1"]].to_numpy()
+y_train = DF[["2"]].to_numpy().T[0]
 
 # Convert data to PyTorch tensors
-length_tensor = torch.tensor(x, dtype=torch.float32).unsqueeze(1)
-force_tensor = torch.tensor(force, dtype=torch.float32).unsqueeze(1)
+X_train_tensor = torch.tensor(X_train, dtype=torch.float32)
+y_train_tensor = torch.tensor(y_train, dtype=torch.float32).view(-1, 1)
 
 # Create a TensorDataset and DataLoader
-dataset = TensorDataset(length_tensor, force_tensor)
+dataset = TensorDataset(X_train_tensor, y_train_tensor)
 train, valid = torch.utils.data.random_split(dataset,[0.8,0.2])
 train_loader = DataLoader(train, batch_size=32)
 valid_loader = DataLoader(valid, batch_size=32)
@@ -41,7 +59,7 @@ class MLP(nn.Module):
         return x
 
 # Instantiate the model
-input_size = 1
+input_size = 2
 hidden_size = 64
 output_size = 1
 
@@ -53,7 +71,7 @@ optimizer = optim.Adam(model.parameters(), lr=0.0015)
 scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.99)
 
 # Initialize TensorBoard writer
-writer = SummaryWriter('runs/ActiveForceLengthMLP')
+writer = SummaryWriter('runs/2DVelocityMLP')
 
 # Training loop with TensorBoard logging
 num_epochs = 300
@@ -91,16 +109,23 @@ for epoch in range(num_epochs):
 writer.close()
 
 with torch.no_grad():
-    predicted_force = model(length_tensor).numpy()
+    predicted_velocity = model(X_train_tensor).numpy()
+Z_pred = np.reshape(predicted_velocity, (-1, sample_size))
 
-# Plot the original vs predicted force-length curve
-plt.scatter(x, force, alpha=0.5, label="Original")
-plt.scatter(x, predicted_force, alpha=0.5, label="Predicted")
-plt.title("Original vs Predicted Force-Length Data")
-plt.xlabel("Length")
-plt.ylabel("Force")
-plt.legend()
-plt.show()
+# # Plot the true function vs the model prediction
+# plt.figure(figsize=(12, 6))
+
+# plt.subplot(1, 2, 1)
+# plt.contourf(X, Y, Z, cmap='viridis')
+# plt.title('True Function')
+# plt.colorbar()
+
+# plt.subplot(1, 2, 2)
+# plt.contourf(X, Y, Z_pred, cmap='viridis')
+# plt.title('MLP Prediction')
+# plt.colorbar()
+
+# plt.show()
 
 # Save the model
 # torch.save(model.state_dict(), 'ActiveForceLengthMLP.pth')

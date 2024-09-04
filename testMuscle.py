@@ -108,25 +108,15 @@ else:
 minActiveFiberLength = curves['AFL'].min_norm_active_fiber_length * params['lMopt']
 params['lMmin'] = max(minActiveFiberLength, minPennatedFiberLength)
 
-# Initial muscle states
-act = params['amin']
-lM = params['lMopt']
-alphaM = calcPennationAngle(lM, params)
-lMT = lM * np.cos(alphaM) + params['lTslack']
-
-# Compute vM
-vM = calcVel(lM, lMT, act, params, curves)
-
 # Test: initial equilibrium
 # Computes the equilibrium fiber length, given the initial
 # activation and the initial musculotendon length.
 # Given lM, we can compute vM that gives force balance. This vM
 # may or may not be zero. For initialization, we want this vM
 # to be zero.
-lM = fsolve(lambda lM: calcVel(lM, lMT, act, params, curves), lM)[0]
-lMtilde = lM / params['lMopt']
-lb = params['lMmin'] / params['lMopt']
-ub = 2.0
-lMtilde = max(lb, min(lMtilde, ub))
-print(f'Initial lMtilde: {lMtilde:.6f}')
-print(f'vM: {vM:.6f}')
+# lM = fsolve(lambda lM: calcVel(lM, lMT, act, params, curves), lM)[0]
+# lMtilde = lM / params['lMopt']
+# lb = params['lMmin'] / params['lMopt']
+# ub = 2.0
+# lMtilde = max(lb, min(lMtilde, ub))
+# print(f'Initial lMtilde: {lMtilde:.6f}')
