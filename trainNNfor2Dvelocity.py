@@ -9,9 +9,10 @@ import pandas as pd
 from torch.utils.tensorboard import SummaryWriter
 from testMuscle import *
 
+sample_size = 100
+
 # # Generate data
 # act = 1
-# sample_size = 10
 # lMtilde = np.random.uniform(.45, 1.85, sample_size)
 # lTtilde = np.random.uniform(.99, 1.04, sample_size)
 # X, Y = np.meshgrid(lMtilde, lTtilde)
@@ -25,12 +26,19 @@ from testMuscle import *
 # X_train = np.vstack([X.ravel(), Y.ravel()]).T
 # y_train = Z.ravel()
 
-# read in data
+# Read in data
 DF = pd.read_csv('velocityData.csv')
-X_train = DF[["0", "1"]].to_numpy()
-y_train = DF[["2"]].to_numpy().T[0]
+# Organize data for plot
+X = DF.head(sample_size).drop(DF.columns[[0]], axis=1).to_numpy()
+DF = DF.iloc[sample_size:]
+Y = DF.head(sample_size).drop(DF.columns[[0]], axis=1).to_numpy()
+DF = DF.iloc[sample_size:]
+Z = DF.head(sample_size).drop(DF.columns[[0]], axis=1).to_numpy()
+DF = DF.iloc[sample_size:]
 
 # Convert data to PyTorch tensors
+X_train = np.vstack([X.ravel(), Y.ravel()]).T
+y_train = Z.ravel()
 X_train_tensor = torch.tensor(X_train, dtype=torch.float32)
 y_train_tensor = torch.tensor(y_train, dtype=torch.float32).view(-1, 1)
 
@@ -62,7 +70,6 @@ class MLP(nn.Module):
 input_size = 2
 hidden_size = 64
 output_size = 1
-
 model = MLP(input_size, hidden_size, output_size, 6)
 
 # Define loss function and optimizer
@@ -71,7 +78,7 @@ optimizer = optim.Adam(model.parameters(), lr=0.0015)
 scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.99)
 
 # Initialize TensorBoard writer
-writer = SummaryWriter('runs/2DVelocityMLP')
+writer = SummaryWriter('runs/twoDVelocityMLP')
 
 # Training loop with TensorBoard logging
 num_epochs = 300
@@ -79,7 +86,7 @@ min_valid_loss = np.inf
 
 for epoch in range(num_epochs):
     train_loss = 0.0
-    model.train()     # Optional when not using Model Specific layer
+    model.train()
     for inputs, labels in train_loader:
         optimizer.zero_grad()
         target = model(inputs)
@@ -90,7 +97,7 @@ for epoch in range(num_epochs):
     avg_loss = train_loss / len(train_loader)
 
     valid_loss = 0.0
-    model.eval()     # Optional when not using Model Specific layer
+    model.eval()
     for data, labels in valid_loader:  
         target = model(data)
         loss = criterion(target,labels)
@@ -108,24 +115,26 @@ for epoch in range(num_epochs):
 # Close the TensorBoard writer
 writer.close()
 
+# Generate predictions on the training set
 with torch.no_grad():
     predicted_velocity = model(X_train_tensor).numpy()
+# Reshape results into grid shape
 Z_pred = np.reshape(predicted_velocity, (-1, sample_size))
 
-# # Plot the true function vs the model prediction
-# plt.figure(figsize=(12, 6))
+# Plot the true function vs the model prediction
+plt.figure(figsize=(12, 6))
 
-# plt.subplot(1, 2, 1)
-# plt.contourf(X, Y, Z, cmap='viridis')
-# plt.title('True Function')
-# plt.colorbar()
+plt.subplot(1, 2, 1)
+plt.contourf(X, Y, Z, cmap='viridis')
+plt.title('True Function')
+plt.colorbar()
 
-# plt.subplot(1, 2, 2)
-# plt.contourf(X, Y, Z_pred, cmap='viridis')
-# plt.title('MLP Prediction')
-# plt.colorbar()
+plt.subplot(1, 2, 2)
+plt.contourf(X, Y, Z_pred, cmap='viridis')
+plt.title('MLP Prediction')
+plt.colorbar()
 
-# plt.show()
+plt.show()
 
 # Save the model
 # torch.save(model.state_dict(), 'ActiveForceLengthMLP.pth')
