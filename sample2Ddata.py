@@ -4,21 +4,27 @@ import matplotlib.pyplot as plt
 from testMuscle import *
 
 # activation
-act = 1
+act = 0
+sample_size = 100
 
 # Create a grid of points on the xy-plane
-lMtilde = np.random.uniform(low = .45, high= 1.85, size = 1000)
-lTtilde = np.random.uniform(low = .99, high= 1.04, size = 1000)
+lMtilde = np.linspace(.45, 1.85, sample_size)
+lTtilde = np.linspace(.99, 1.04, sample_size)
 
 #Evaluate the function
-vMtilde = list()
-i = 0
-for i in range(len(lMtilde)): 
-    z = calcVelTilde(lMtilde[i], lTtilde[i], act, params, curves)
-    vMtilde.append(z)
+X, Y = np.meshgrid(lMtilde, lTtilde)
+vMTilde = []
+
+for x, y in zip(X, Y):
+    for x1, y1 in zip(x, y):
+        vMTilde.append(calcVelTilde(x1, y1, act, params, curves))
+
+Z = np.reshape(np.array(vMTilde), (-1, sample_size))
+
+# print(Z)
 
 # Create a contour plot
-plt.tricontourf(lMtilde, lTtilde, vMtilde)
+plt.contourf(X, Y, Z, levels=np.linspace(-1.5, 1.5, 100))
 plt.colorbar(label='vMtilde')
 plt.title('2D Slice of vMtilde')
 plt.xlabel('lMtilde')

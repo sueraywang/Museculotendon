@@ -62,7 +62,7 @@ class SmoothSegmentedFunction:
         y0 = np.zeros_like(x)
         y1 = np.zeros_like(x)
         y2 = np.zeros_like(x)
-        for k in range(0,len(x)):
+        for k in range(0,x.size):
             xk = x[k]
             if self.x0_ <= xk <= self.x1_:
                 idx = QuinticBezierCurve.calcIndex(xk, self.mXVec_)

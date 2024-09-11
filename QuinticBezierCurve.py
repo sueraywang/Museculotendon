@@ -1,5 +1,5 @@
 import numpy as np
-from fzeroNewton import fzero_newton
+from fzeroNewtonWithConvergenceCheck import fzero_newton
 
 class QuinticBezierCurve:
     @staticmethod

@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.optimize import fsolve
+from fzeroNewtonWithConvergenceCheck import fzero_newton
 from CurveActiveForceLength import CurveActiveForceLength
 from CurveFiberForceLength import CurveFiberForceLength
 from CurveTendonForceLength import CurveTendonForceLength
@@ -25,10 +26,10 @@ def calcVelTilde(lMtilde, lTtilde, act, params, curves):
     afl = curves['AFL'].calcValue(lMtilde)
     pfl = curves['PFL'].calcValue(lMtilde)
     tfl = curves['TFL'].calcValue(lTtilde)
-    vMtildeInit = 0
+    vMtildeInit = 0.0
 
     # Use fsolve to compute the muscle fiber velocity
-    vMtilde = fsolve(lambda vMtilde: forceBalance(vMtilde, act, afl, pfl, tfl, curves['FV'], cosAlphaM, params), vMtildeInit)[0]
+    vMtilde = fzero_newton(lambda vMtilde: forceBalance(vMtilde, act, afl, pfl, tfl, curves['FV'], cosAlphaM, params), vMtildeInit, verbose=False)[0]
     return vMtilde
 
 # Computes the pennation angle from lM
@@ -72,7 +73,7 @@ def forceBalance(vMtilde, act, afl, pfl, tfl, curveFV, cosAlphaM, params):
     fM = act * afl * fv + pfl + params['beta'] * vMtilde
     f = fM * cosAlphaM - tfl
     J = (act * afl * dfv + params['beta']) * cosAlphaM
-    return f
+    return f, J
 
 # Muscle parameters
 params = {

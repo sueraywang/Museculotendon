@@ -66,14 +66,14 @@ class CurveForceVelocity(CurveBase):
             False
         )
 
-    def calc_value(self, norm_fiber_velocity):
+    def calcValue(self, norm_fiber_velocity):
         """
         Evaluates the force-velocity curve at a normalized fiber velocity of
         'norm_fiber_velocity'.
         """
-        return self.m_curve.calc_value(norm_fiber_velocity)
+        return self.m_curve.calcValue(norm_fiber_velocity)
 
-    def calc_derivative(self, norm_fiber_velocity, order):
+    def calcDerivative(self, norm_fiber_velocity, order):
         """
         Calculates the derivative of the force-velocity multiplier with respect
         to the normalized fiber velocity.
@@ -86,13 +86,13 @@ class CurveForceVelocity(CurveBase):
         """
         if not (0 <= order <= 2):
             raise ValueError(f"order must be 0, 1, or 2, but {order} was entered")
-        return self.m_curve.calc_derivative(norm_fiber_velocity, order)
+        return self.m_curve.calcDerivative(norm_fiber_velocity, order)
 
-    def calc_val_deriv(self, norm_fiber_velocity):
+    def calcValDeriv(self, norm_fiber_velocity):
         """
         Calculates the value and derivatives of the force-velocity curve at a normalized fiber velocity.
         """
-        return self.m_curve.calc_val_deriv(norm_fiber_velocity)
+        return self.m_curve.calcValDeriv(norm_fiber_velocity)
 
     @staticmethod
     def test():
