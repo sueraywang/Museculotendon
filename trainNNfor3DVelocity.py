@@ -8,44 +8,15 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from torch.utils.tensorboard import SummaryWriter
 from testMuscle import *
-from scipy.interpolate import griddata
 
 sample_size = 1000
 
-# # Generate data
-# act = 1
-# lMtilde = np.random.uniform(.45, 1.85, sample_size)
-# lTtilde = np.random.uniform(.99, 1.04, sample_size)
-# X, Y = np.meshgrid(lMtilde, lTtilde)
-# values = []
-
-# for x, y in zip(X, Y):
-#     for x1, y1 in zip(x, y):
-#         values.append(calcVelTilde(x1, y1, act, params, curves))
-
-# Z = np.reshape(np.array(values), (-1, sample_size))
-# X_train = np.vstack([X.ravel(), Y.ravel()]).T
-# y_train = Z.ravel()
-
 # Read in data
-DF = pd.read_csv('velocityData_2D_a=0.csv')
-# Organize data for plot
-X = DF.head(sample_size).drop(DF.columns[[0]], axis=1).to_numpy()
-DF = DF.iloc[sample_size:]
-Y = DF.head(sample_size).drop(DF.columns[[0]], axis=1).to_numpy()
-DF = DF.iloc[sample_size:]
-Z = DF.head(sample_size).drop(DF.columns[[0]], axis=1).to_numpy()
-DF = DF.iloc[sample_size:]
-
-df = pd.DataFrame()
-df = df.assign(X=pd.Series(X.ravel()))
-df = df.assign(Y=pd.Series(Y.ravel()))
-df = df.assign(Z=pd.Series(Z.ravel()))
-df = df[(df["Z"] >= -1.7) & (df["Z"] <= 1.7)]
+df = pd.read_csv('random3DVelocityData.csv')
 
 # Convert data to PyTorch tensors
-X_train = df[["X", "Y"]].to_numpy()
-y_train = df[["Z"]].to_numpy()
+X_train = df[["lMtilde", "lTtilde", "act"]].to_numpy()
+y_train = df["vMtilde"].to_numpy()
 X_train_tensor = torch.tensor(X_train, dtype=torch.float32)
 y_train_tensor = torch.tensor(y_train, dtype=torch.float32).view(-1, 1)
 
@@ -74,7 +45,7 @@ class MLP(nn.Module):
         return x
 
 # Instantiate the model
-input_size = 2
+input_size = 3
 hidden_size = 64
 output_size = 1
 model = MLP(input_size, hidden_size, output_size, 6)
@@ -122,26 +93,9 @@ for epoch in range(num_epochs):
 # Close the TensorBoard writer
 writer.close()
 
-# Generate predictions on the training set
-with torch.no_grad():
-    predicted_velocity = model(X_train_tensor).numpy()
-# Reshape results into grid shape
-Z_pred = griddata((df['X'], df['Y']), df['Z'], (X, Y), method='cubic')
-
-# Plot the true function vs the model prediction
-plt.figure(figsize=(12, 6))
-
-plt.subplot(1, 2, 1)
-plt.contourf(X, Y, Z, levels=np.linspace(-1.5, 1.5, 11))
-plt.colorbar(label='vMtilde', ticks=np.linspace(-1.5, 1.5, 11)) 
-plt.title('True Function')
-
-plt.subplot(1, 2, 2)
-plt.contourf(X, Y, Z_pred, levels=np.linspace(-1.5, 1.5, 11))
-plt.colorbar(label='vMtilde', ticks=np.linspace(-1.5, 1.5, 11)) 
-plt.title('MLP Prediction')
-
-plt.show()
-
 # Save the model
-# torch.save(model.state_dict(), 'ActiveForceLengthMLP.pth')
+torch.save(model.state_dict(), 'mlp_model.pth')
+
+# Generate predictions on the training set
+#with torch.no_grad():
+#    predicted_velocity = model(X_train_tensor).numpy()

@@ -3,34 +3,53 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from testMuscle import *
 import csv
+import random
 
-sample_size = 50
+sample_size = 1000
 
-lMtilde = np.linspace(.45, 1.85, sample_size)
-lTtilde = np.linspace(.99, 1.04, sample_size)
-act = np.linspace(0, 1, sample_size)
+lMtilde = list(np.random.uniform(.40, 1.90, sample_size))
+lTtilde = list(np.random.uniform(.99, 1.07, sample_size))
+act = list(np.random.uniform(0, 1, sample_size))
 
-X, Y, Z= np.meshgrid(lMtilde, lTtilde, act)
-
-values = np.zeros((len(lMtilde),len(lTtilde),len(act)))
+r_lM = []
+r_lT = []
+r_act = []
+vMtilde = []
 
 # Evaluate the function on the grid
-for i in range (len(lMtilde)):
-     for j in range (len(lTtilde)):
-         for k in range (len(act)):
-             values[i][j][k] = calcVelTilde(lMtilde[i], lTtilde[j], act[k], params, curves)
+while (len(vMtilde) < 10000):
+    lM = random.choice(lMtilde)
+    lT = random.choice(lTtilde)
+    a = random.choice(act)
+    v = calcVelTilde(lM, lT, a, params, curves)
+    if ((v <= 1.5) & (v >= -1.5)) : 
+        r_lM.append(lM)
+        r_lT.append(lT)
+        r_act.append(a)
+        vMtilde.append(v)
 
+while (len(vMtilde) < 10500):
+    lM = random.choice(lMtilde)
+    lT = random.choice(lTtilde)
+    a = 0
+    v = calcVelTilde(lM, lT, a, params, curves)
+    if ((v <= 1.5) & (v >= -1.5)) : 
+        r_lM.append(lM)
+        r_lT.append(lT)
+        r_act.append(a)
+        vMtilde.append(v)
 
+while (len(vMtilde) < 11000):
+    lM = random.choice(lMtilde)
+    lT = random.choice(lTtilde)
+    a = 1
+    v = calcVelTilde(lM, lT, a, params, curves)
+    if ((v <= 1.5) & (v >= -1.5)) : 
+        r_lM.append(lM)
+        r_lT.append(lT)
+        r_act.append(a)
+        vMtilde.append(v)
 
-# Create a figure and 3D axes
-fig = plt.figure()
-ax = plt.subplot(projection="3d")
-ax.scatter(X, Y, Z, s=10, alpha=.5, c=values, cmap="RdBu")
-plt.show()
-
-# Add labels
-ax.set_xlabel('lMtilde')
-ax.set_ylabel('lTtilde')
-ax.set_zlabel('activation')
-
-plt.show()
+DF = pd.DataFrame(np.column_stack([r_lM, r_lT, r_act, vMtilde]), 
+                               columns=['lMtilde', 'lTtilde', 'act', 'vMtilde'])
+DF.to_csv("random3DVelocityData.csv")

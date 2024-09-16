@@ -5,10 +5,10 @@ from testMuscle import *
 
 # Generate data
 act = 0
-sample_size = 1000
+sample_size = 300
 
-lMtilde = np.linspace(.45, 1.85, sample_size)
-lTtilde = np.linspace(.99, 1.04, sample_size)
+lMtilde = np.linspace(.40, 1.90, sample_size)
+lTtilde = np.linspace(.99, 1.07, sample_size)
 
 #Evaluate the function
 X, Y = np.meshgrid(lMtilde, lTtilde)
@@ -23,7 +23,7 @@ Z = np.reshape(np.array(vMTilde), (-1, sample_size))
 
 data = np.vstack([X, Y, Z])
 DF = pd.DataFrame(data) 
-DF.to_csv("velocityData_2D_a=0.csv")
+DF.to_csv("velocityData.csv")
 
 # data = np.vstack([X.ravel(), Y.ravel(), Z.ravel()]).T
 # DF = pd.read_csv('velocityData.csv')
