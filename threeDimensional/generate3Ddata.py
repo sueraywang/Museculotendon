@@ -101,4 +101,4 @@ while (len(vMtilde) < 13000):
 
 DF = pd.DataFrame(np.column_stack([r_lM, r_lT, r_act, vMtilde]), 
                                columns=['lMtilde', 'lTtilde', 'act', 'vMtilde'])
-DF.to_csv("random3DVelocityData.csv")
+DF.to_csv("threeDimensional/random3DVelocityData.csv")

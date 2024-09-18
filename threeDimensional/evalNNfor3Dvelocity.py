@@ -77,8 +77,8 @@ plt.title('MLP Prediction for act = 1')
 """
 
 # Plot the error
-plt.contourf(X, Y, Z1, levels=np.linspace(-10, 10, 11))
-plt.colorbar(label='vMtilde', ticks=np.linspace(-10, 10, 11)) 
+plt.contourf(X, Y, Z1, levels=np.linspace(-1, 1, 11))
+plt.colorbar(label='vMtilde', ticks=np.linspace(-1, 1, 11)) 
 plt.xlabel('lMtilde')
 plt.ylabel('lTtilde')
 plt.title('MLP Prediction for act = 1')
