@@ -1,4 +1,11 @@
 import numpy as np
-r_act = [0, 1] * 50
+sample_size = 5
+lMtilde = np.linspace(1, 5, sample_size)
+lTtilde = np.linspace(1, 5, sample_size)
+X, Y = np.meshgrid(lMtilde, lTtilde)
 
-print(r_act)
+X_train = np.vstack([X.ravel(), Y.ravel()]).T
+
+print(X_train)
+for x, y in zip(X.ravel(), Y.ravel()):
+    print(x, y)
