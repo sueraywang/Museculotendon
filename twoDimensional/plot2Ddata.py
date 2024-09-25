@@ -30,14 +30,13 @@ vMTilde = []
 
 for x, y in zip(X.ravel(), Y.ravel()):
         vMTilde.append(calcVelTilde(x, y, act, params, curves))
-
 Z = np.reshape(np.array(vMTilde), X.shape)
 
 # print(Z)
 
 # Create a contour plot
-plt.contourf(X, Y, Z, levels=np.linspace(-1.75, 1.75, 11))
-plt.colorbar(label='vMtilde', ticks=np.linspace(-1.75, 1.75, 11))
+plt.contourf(X, Y, Z, levels=np.linspace(-1.5, 1.5, 11))
+plt.colorbar(label='vMtilde', ticks=np.linspace(-1.5, 1.5, 11)) 
 plt.title('2D slice of vMtilde when activation = 1')
 plt.xlabel('lMtilde')
 plt.ylabel('lTtilde')

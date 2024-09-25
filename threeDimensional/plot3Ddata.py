@@ -26,7 +26,7 @@ plt.figure()
 plt.tricontourf(df_slice["lMtilde"], df_slice["lTtilde"], df_slice["vMtilde"])
 #plt.contourf(X, Y, Z, levels=np.linspace(-1.5, 1.5, 11))
 # Add colorbar for reference
-plt.colorbar(label='vMtilde', ticks=np.linspace(-1.75, 1.75, 11))
+plt.colorbar(label='vMtilde')
 plt.xlabel('lMtilde')
 plt.ylabel('lTtilde')
 plt.title(f'Contour Plot for act is 1')

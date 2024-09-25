@@ -7,6 +7,8 @@ sys.path.append('../python-nn')
 from testMuscle import *
 
 sample_size = 100000
+data_size = 5e4
+boundary_size = 5e3
 fixed_a = 1
 vRange = 1.75
 
@@ -20,7 +22,7 @@ r_act = []
 vMtilde = []
 
 # Evaluate the function on the grid
-while (len(vMtilde) < 10000):
+while (len(vMtilde) < data_size):
     lM = random.choice(lMtilde)
     lT = random.choice(lTtilde)
     a = random.choice(act)
@@ -31,7 +33,7 @@ while (len(vMtilde) < 10000):
         r_act.append(a)
         vMtilde.append(v)
 
-while (len(vMtilde) < 11000):
+while (len(vMtilde) < data_size + boundary_size):
     lM = random.choice(lMtilde)
     lT = random.choice(lTtilde)
     a = 0
@@ -42,7 +44,7 @@ while (len(vMtilde) < 11000):
         r_act.append(a)
         vMtilde.append(v)
 
-while (len(vMtilde) < 12000):
+while (len(vMtilde) < data_size + boundary_size*2):
     lM = random.choice(lMtilde)
     lT = random.choice(lTtilde)
     a = 1

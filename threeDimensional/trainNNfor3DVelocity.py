@@ -64,7 +64,7 @@ runTime = f"{datetime.datetime.fromtimestamp(int(time.time()))}".replace(" ", "_
 writer = SummaryWriter(os.path.join("runs_" , runTime))
 
 # Training loop with TensorBoard logging
-num_epochs = 300
+num_epochs = 600
 min_valid_loss = np.inf
 
 for epoch in range(num_epochs):
