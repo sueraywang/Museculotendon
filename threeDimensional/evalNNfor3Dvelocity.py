@@ -65,10 +65,9 @@ df_GT = pd.read_csv("twoDimensional/velocityData_2D_a=1.csv")
 DF = pd.DataFrame(np.column_stack([predicted_velocity, df_GT["vMtilde"]]), 
                                columns=['Prediction', 'GT'])
 DF.loc[(DF.GT <= -1.75) | (DF.GT >= 1.75), 'Prediction'] = np.nan
-Z_error_filtered = (np.asarray(DF['GT']) - np.asarray(DF['Prediction'])).reshape(X.shape)
+Z_error_uninterpolated = (np.asarray(DF['GT'])).reshape(X.shape) - (np.asarray(DF['Prediction'])).reshape(X.shape)
 Z_error = (np.asarray(DF['GT'])).reshape(X.shape) - Z
 Z_gt = (np.asarray(DF['GT'])).reshape(X.shape)
-
 # Custom levels for ground truth
 gt_levels = np.linspace(-1.75, 1.75, 11)
 
@@ -90,8 +89,22 @@ mask = (Z_gt_fine < -1.75) | (Z_gt_fine > 1.75)
 Z_gt_fine_masked = np.ma.masked_where(mask, Z_gt_fine)
 Z_error_fine_masked = np.ma.masked_where(mask, Z_error_fine)
 
+DF1 = pd.DataFrame(np.column_stack([X_fine.ravel(), Y_fine.ravel(), Z_error_fine_masked.ravel()]), 
+                               columns=['X', 'Y', 'Z'])
+max1 = max(Z_error_fine_masked.ravel())
+print(DF1[DF1['Z'] == max1])
+
+DF2 = pd.DataFrame(np.column_stack([X.ravel(), Y.ravel(), Z_error_uninterpolated.ravel()]), 
+                               columns=['X', 'Y', 'Z'])
+DF2 = DF2.sort_values(by=['Z'], ascending=False)
+list1 = DF2['X'].head(5)
+list2 = DF2['Y'].head(5)
+print(DF2.head(5))
+print(max(list1), min(list1))
+print(max(list2), min(list2))
+
 # Create the figure and subplots
-fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+fig, ax = plt.subplots(1, 3, figsize=(12, 6))
 
 # Plot the interpolated and masked ground truth
 contour_gt = ax[0].contourf(X_fine, Y_fine, Z_gt_fine_masked, levels=np.linspace(-1.75, 1.75, 11))
@@ -103,50 +116,12 @@ contour_error = ax[1].contourf(X_fine, Y_fine, Z_error_fine_masked)
 fig.colorbar(contour_error, ax=ax[1])
 ax[1].set_title('Interpolated Error with Same Mask')
 
-"""
-# Mask the NaNs and interpolate
-points = np.array([X[~np.isnan(Z1)], Y[~np.isnan(Z1)]]).T
-values = Z1[~np.isnan(Z1)]
-grid_z = griddata(points, values, (X, Y), method='nearest')
+# Plot the uninterpolated error
+contour_error_no_interpolation = ax[2].contourf(X, Y, Z_error_uninterpolated)
+fig.colorbar(contour_error_no_interpolation, ax=ax[2])
+ax[2].set_title('Error of MLP Prediction for act = 1 without interpolation')
 
-z2 = np.asarray(DF['GT']).reshape(X.shape)
-
-# Step 2: Define contour levels for z2 and identify the plotted region
-levels_z2 = np.linspace(-1.75, 1.75, 11)  # Define contour levels for z2
-plotted_region_mask = np.logical_and(z2 >= min(levels_z2), z2 <= max(levels_z2))
-
-# Step 3: Create a transition (gradient) mask for smoothing the boundary of the unplotted region
-# Apply Gaussian filter to soften the boundary between plotted and unplotted areas
-distance_to_unplotted = gaussian_filter(plotted_region_mask.astype(float), sigma=5)
-
-# Invert the distance mask to emphasize unplotted regions (lower values near unplotted)
-blending_mask = np.clip(1 - distance_to_unplotted, 0, 1)
-
-# Step 4: Apply the blending mask to the first plot
-z1_masked = np.copy(grid_z)
-z1_masked[blending_mask < 0.05] = np.nan  # Mask out regions where blending is near unplotted
-
-
-df = pd.read_csv('velocityData_2D_a=1.csv')
-Z1 = (df["vMtilde"].to_numpy() - predicted_velocity.squeeze()).reshape(X.shape)
-
-# Plot the true function vs the model prediction
-plt.contourf(X, Y, Z, levels=np.linspace(-1.75, 1.75, 11))
-plt.colorbar(label='vMtilde', ticks=np.linspace(-1.75, 1.75, 11)) 
 plt.xlabel('lMtilde')
 plt.ylabel('lTtilde')
-plt.title('MLP Prediction for act = 1')
-
-# Plot the error
-#plt.contourf(X, Y, Z1, levels=np.linspace(-1, 1, 11))
-#plt.colorbar(label='vMtilde', ticks=np.linspace(-1, 1, 11)) 
-#, levels=np.linspace(-0.4, 1.2, 9)
-#plt.contourf(X, Y, Z2, levels=np.linspace(-0.33, 1.03, 8))
-plt.contourf(X1, Y1, grid_z)
-plt.colorbar(label='Error in vMtilde')
-plt.xlabel('lMtilde')
-plt.ylabel('lTtilde')
-plt.title('Error of MLP Prediction for act = 1')
-"""
 
 plt.show()

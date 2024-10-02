@@ -99,7 +99,7 @@ for epoch in range(num_epochs):
 writer.close()
 
 # Save the model
-torch.save(model.state_dict(), 'mlp_model.pth')
+torch.save(model.state_dict(), 'threeDimensional/mlp_model.pth')
 
 # Generate predictions on the training set
 #with torch.no_grad():
