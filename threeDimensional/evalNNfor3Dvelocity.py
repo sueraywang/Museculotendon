@@ -5,13 +5,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from scipy.interpolate import griddata
-from scipy.ndimage import binary_dilation, gaussian_filter
-import numpy.ma as ma
-
-
 import sys
 sys.path.append('../python-nn')
 from testMuscle import *
+
+# Check if GPU is available
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Define MLP model
 class MLP(nn.Module):
@@ -33,14 +32,15 @@ class MLP(nn.Module):
 
 # Instantiate the model
 input_size = 3
-hidden_size = 64
+hidden_size = 128
 output_size = 1
 model = MLP(input_size, hidden_size, output_size, 6)
 
-# Load the model's state_dict (parameters)
-model.load_state_dict(torch.load('threeDimensional/mlp_model.pth'))
+# Load the saved model weights onto the GPU
+model.load_state_dict(torch.load('threeDimensional/mlp_model.pth', map_location=device))
 
-# Set the model to evaluation mode (important for inference)
+# Move the model to CPU
+model = model.to('cpu')
 model.eval()
 
 # Generate eval data

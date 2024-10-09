@@ -3,10 +3,9 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
-import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
 from torch.utils.tensorboard import SummaryWriter
+import numpy as np
+import pandas as pd
 import time
 import datetime
 import os
@@ -26,8 +25,8 @@ y_train_tensor = torch.tensor(y_train, dtype=torch.float32).view(-1, 1)
 # Create a TensorDataset and DataLoader
 dataset = TensorDataset(X_train_tensor, y_train_tensor)
 train, valid = torch.utils.data.random_split(dataset,[0.8,0.2])
-train_loader = DataLoader(train, batch_size=32)
-valid_loader = DataLoader(valid, batch_size=32)
+train_loader = DataLoader(train, batch_size=64)
+valid_loader = DataLoader(valid, batch_size=64)
 
 # Define MLP model
 class MLP(nn.Module):
@@ -49,7 +48,7 @@ class MLP(nn.Module):
 
 # Instantiate the model
 input_size = 3
-hidden_size = 64
+hidden_size = 128
 output_size = 1
 model = MLP(input_size, hidden_size, output_size, 6)
 
@@ -68,6 +67,8 @@ num_epochs = 600
 min_valid_loss = np.inf
 
 for epoch in range(num_epochs):
+    start_time = time.time()
+
     train_loss = 0.0
     model.train()
     for inputs, labels in train_loader:
@@ -87,7 +88,8 @@ for epoch in range(num_epochs):
         valid_loss += loss.item()
     avg_valid_loss = valid_loss / len(valid_loader)
 
-    print(f'Epoch [{epoch+1}/{num_epochs}], Train Loss: {avg_loss:.4f}, Validation Loss: {avg_valid_loss:.4f}')
+    end_time = time.time()
+    print(f'Epoch [{epoch+1}/{num_epochs}], Train Loss: {avg_loss:.4f}, Validation Loss: {avg_valid_loss:.4f}, Time: {end_time - start_time:.2f}s')
     
     # Log the logged average loss to TensorBoard
     writer.add_scalars('Losses', {'Training Loss':avg_loss,'Validation Loss':avg_valid_loss}, epoch)
