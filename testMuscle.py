@@ -82,7 +82,7 @@ params = {
     'lTslack': 0.2,  # tendon slack length
     'vMmax': 10,  # maximum contraction velocity
     'alphaMopt': np.pi / 6,  # pennation angle at optimal muscle length
-    'fMopt': 100,  # peak isometric force
+    'fMopt': 1,  # peak isometric force, originally = 100
     'amin': 0.01,  # minimum activation
     'tauA': 0.01,  # activation constant
     'tauD': 0.4,  # deactivation constant
