@@ -7,7 +7,6 @@ import math
 import sys
 sys.path.append('../python-nn')
 from testMuscle import *
-import matplotlib.pyplot as plt
 
 # Constants
 mass = 0.1  # Mass of particle (kg)
@@ -16,34 +15,23 @@ dt = 0.001  # Time step for simulation (seconds)
 activation = 0.0
 alphaMuscle = 0.0
 
-def normalized(vec):
-    return vec / np.linalg.norm(vec)
-
 # Particle positions (x, y, z in meters)
 lMuscle = 0.1  # Rest lengths of muscle (10 cm)
-lTendon = 0.2  # Rest lengths of tendon (20 cm)
+#lTendon = 0.0  # Rest lengths of tendon (20 cm)
+#partition_point = np.array([0.0, lTendon, 0.0]) # The "node" of muscle-tendon connection
 particle1_position = np.array([0.0, 0.0, 0.0])  # Fixed particle at origin
 particle1_velocity = np.array([0.0, 0.0, 0.0])
-particle2_position = normalized(np.array([0.0, -1.0, 0.0])) * (lMuscle + lTendon)  # Moving particle
+particle2_position = np.array([0.0, -lMuscle, 0.0])  # Moving particle
 particle2_velocity = np.array([0.0, 0.0, 0.0])
-partition_point = normalized(particle2_position - particle1_position) * lTendon # The "node" of muscle-tendon connection
 
 # Camera control parameters (spherical coordinates)
-camera_radius = 1.0
+camera_radius = 2.0
 camera_azimuth = 0.0  # Horizontal rotation (radians)
 camera_elevation = math.radians(30)  # Vertical rotation (radians)
 camera_speed = 0.05  # Speed of zooming
 
 # Mouse tracking variables
 scroll_sensitivity = 0.2  # Sensitivity of mouse scroll zooming
-
-# Data storage for plotting
-time_data = []
-plot_time = 0
-lM_over_time = []
-lT_over_time = []
-lMT_over_time = []
-activation_over_time = []
 
 # Initialize GLFW
 if not glfw.init():
@@ -59,46 +47,8 @@ glfw.make_context_current(window)
 # Enable depth test
 glEnable(GL_DEPTH_TEST)
 
-# Initialize Matplotlib for real-time plotting
-plt.ion()
-fig, axs = plt.subplots(2, 1, figsize=(6, 8))
-# Setup each subplot for x, y, and z positions
-line_x, = axs[0].plot([], [], 'r-', label="lM")
-line_x1, = axs[0].plot([], [], 'g-', label="lT")
-line_x2, = axs[0].plot([], [], 'b-', label="lMT")
-axs[0].set_xlim(0, 10)
-axs[0].set_ylim(-1.0, 1.0)
-axs[0].set_title('Muscle and Tendon Length')
-axs[0].set_xlabel('time (s)')
-axs[0].set_ylabel('Lengths (m)')
-axs[0].legend()
-
-line_y, = axs[1].plot([], [], 'y-', label="activation")
-axs[1].set_xlim(0, 10)
-axs[1].set_ylim(0, 1.0)
-axs[1].set_title('Activation')
-axs[1].set_xlabel('time (s)')
-axs[1].set_ylabel('act')
-
-def computeVelTilde(lMtilde, lTtilde, act, alphaM, params, curves):
-    cosAlphaM = np.cos(alphaM)
-    afl = curves['AFL'].calcValue(lMtilde)
-    pfl = curves['PFL'].calcValue(lMtilde)
-    tfl = tfl = curves['TFL'].calcValue(lTtilde)
-    vMtildeInit = 0.0
-
-    # Use fsolve to compute the muscle fiber velocity
-    vMtilde = fzero_newton(lambda vMtilde: forceBalance(vMtilde, act, afl, pfl, tfl, curves['FV'], cosAlphaM, params), vMtildeInit, verbose=False)[0]
-    return vMtilde
-
-def computeVel(lM, lMT, act, alphaM, params, curves):
-    lMtilde = lM / params['lMopt']
-    lT = lMT - lM * np.cos(alphaM)
-    lTtilde = lT / params['lTslack']
-    vMtilde = computeVelTilde(lMtilde, lTtilde, act, alphaM, params, curves)
-    vM = vMtilde * params['lMopt'] * params['vMmax']
-    
-    return vM
+def normalized(vec):
+    return vec / np.linalg.norm(vec)
 
 def muscleForce(vM, lM, act, alphaM, params):
     lMtilde = lM / params['lMopt']
@@ -118,7 +68,7 @@ def applyConstraint():
     particle1_position += d
     particle2_position += d
     #particle1_velocity = np.array([0.0, 0.0, 0.0])
-    #particle2_velocity = d/dt
+    #particle2_velocity = (particle2_position - previous_position)/dt
 
 # Function to update the mulscle and tendon
 def update_muscle():
@@ -126,12 +76,14 @@ def update_muscle():
 
     # Update muscle velocity and length given by particles
     lMT_current = -(particle2_position - particle1_position)
-    vMuscle = computeVel(lMuscle, np.linalg.norm(lMT_current), activation, alphaMuscle, params, curves)
-    lMuscle += float(vMuscle) * dt
+    lMuscle = np.linalg.norm(lMT_current)
+    vMuscle = np.array([-np.linalg.norm(particle2_velocity - particle1_velocity)]) if (lMuscle < 0.1) else np.array([np.linalg.norm(particle2_velocity - particle1_velocity)])
 
-    # Compute forces
+    # Compute forces on particle 2
     force_gravity = np.array([0, -mass * gravity, 0])  # Gravity acts in the y-direction
     force_muscle = muscleForce(vMuscle, lMuscle, activation, alphaMuscle, params) * normalized(lMT_current)
+
+    # Total force on particle 2
     total_force = force_muscle + force_gravity
 
     # Compute acceleration and update particles' positions
@@ -145,23 +97,7 @@ def update_muscle():
 
     applyConstraint()
 
-    #print(force_muscle, total_force)
-
-def update_partition_point():
-    global particle1_position, particle2_position, lMuscle, lTendon, partition_point
-
-    lMT_next = -(particle2_position - particle1_position)
-    lTendon = np.linalg.norm(lMT_next) - lMuscle * np.cos(alphaMuscle)
-    partition_point = -lTendon * normalized(lMT_next)
-
-def update_plot():
-    global lMuscle, lTendon, activation, plot_time
-    lM_over_time.append(lMuscle)
-    lT_over_time.append(lTendon)
-    lMT_over_time.append(lTendon + lMuscle)
-    activation_over_time.append(activation)
-    time_data.append(plot_time)
-    plot_time += dt
+    print(total_force, force_muscle, lMuscle)
     
 # Function to render the sphere using triangles
 def draw_sphere(radius, slices, stacks):
@@ -222,14 +158,16 @@ def render():
     glPopMatrix()
 
     # Render muscle and tendon (as lines)
+    """
     glColor3f(1.0, 0.0, 0.0)  # Red color for tendon
     glBegin(GL_LINES)
     glVertex3fv(particle1_position)
     glVertex3fv(partition_point)
     glEnd()
+    """
     glColor3f(1.0, 1.0, 1.0)  # white color for muscle
     glBegin(GL_LINES)
-    glVertex3fv(partition_point)
+    glVertex3fv(particle1_position)
     glVertex3fv(particle2_position)
     glEnd()
 
@@ -266,27 +204,8 @@ glfw.set_key_callback(window, key_callback)
 while not glfw.window_should_close(window):
     glfw.poll_events()
 
-    # Update activation
-    activation = np.sin(plot_time * 20) / 2.0 + 0.5
-
     # Update physics simulation
     update_muscle()
-    update_partition_point()
-    update_plot()
-
-    # Update the real-time plot
-    line_x.set_data(time_data, lM_over_time)
-    line_x1.set_data(time_data, lT_over_time)
-    line_x2.set_data(time_data, lMT_over_time)
-    line_y.set_data(time_data, activation_over_time)
-    # Adjust x-axis dynamically for each subplot
-    for ax in axs:
-        ax.set_xlim(0, max(time_data))  # Adjust time window
-    # Adjust y-axis dynamically for each subplot
-    axs[0].set_ylim(min(lM_over_time), max(lMT_over_time))
-    axs[1].set_ylim(min(activation_over_time), max(activation_over_time))
-    plt.draw()
-    plt.pause(dt)
 
     # Render the 3D scene
     render()
