@@ -18,7 +18,6 @@ fM_tensor = torch.tensor(df['force'].values, dtype=torch.float32)
 
 # Create a TensorDataset
 dataset = TensorDataset(l_tilde_tensor, fM_tensor)
-
 # Split the dataset into training and validation sets
 train, valid = torch.utils.data.random_split(dataset, [int(0.8 * len(dataset)), len(dataset) - int(0.8 * len(dataset))])
 train_loader = DataLoader(train, batch_size=64, shuffle=True)
