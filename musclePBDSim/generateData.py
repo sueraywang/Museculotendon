@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import random
 import sys
-sys.path.append('../python-nn')
+sys.path.append('../Museculotendon')
 from testMuscle import *
 
 sample_size = 10000
