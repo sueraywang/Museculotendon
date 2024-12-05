@@ -5,14 +5,14 @@ import numpy as np
 import time
 import math
 import sys
-sys.path.append('../python-nn')
+sys.path.append('../Museculotendon')
 import matplotlib.pyplot as plt
 from testMuscle import *
 
 # Constants
 mass = 0.1  # Mass of particle (kg)
 weight = 1/mass
-SUB_STEPS = 1
+SUB_STEPS = 500
 force_gravity = np.array([0, -mass * 9.8, 0])
 dt = 0.01  # Time step for simulation (seconds)
 k_spring = 10.0  # Spring constant
@@ -56,7 +56,7 @@ line_x, = ax.plot([], [], 'r-', label="lM")
 line_x1, = ax.plot([], [], 'b-', label="lM_GT")
 ax.set_xlim(0, 10)
 ax.set_ylim(-1.0, 1.0)
-ax.set_title('Muscle and Its Ground Truth Length')
+ax.set_title('Cubic Spring and Its Ground Truth Length')
 ax.set_xlabel('time (s)')
 ax.set_ylabel('Lengths (m)')
 ax.legend(loc='upper right')
@@ -73,7 +73,7 @@ def distance_constraint(compliance, dt):
     if length == 0:
         return  # Prevent division by zero
     grad /= length
-    C = length - rest_length
+    C = (length - rest_length)
     delta_lagrangian_multiplier = -C / (w + alpha)
     particle1_position += grad * delta_lagrangian_multiplier * weight
     particle2_position += grad * -delta_lagrangian_multiplier * weight

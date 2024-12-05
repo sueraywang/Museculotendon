@@ -8,7 +8,7 @@ import sys
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-sys.path.append('../python-nn')
+sys.path.append('../Museculotendon')
 import matplotlib.pyplot as plt
 from testMuscle import *
 
@@ -43,12 +43,7 @@ camera_azimuth = 0.0  # Horizontal rotation (radians)
 camera_elevation = math.radians(0)  # Vertical rotation (radians)
 camera_speed = 0.05  # Speed of zooming
 
-# Mouse tracking variables
-scroll_sensitivity = 0.2  # Sensitivity of mouse scroll zooming
-
 # Define the MLP model for C(l_tilde)
-
-
 class MLP(nn.Module):
     def __init__(self, input_size=1, hidden_size=64, output_size=1, layers=3):
         super(MLP, self).__init__()
@@ -108,37 +103,32 @@ def normalized(vec):
 
 def applyConstraint(lM, dt):
     global particle1_position, particle2_position, weight
-    alpha = compliance / (dt ** 2)
-    w = 2 * weight
-
-    # Calculate the gradient vector and normalize
-    grad = particle1_position - particle2_position
-    length = np.linalg.norm(grad)
+    dist = (particle1_position - particle2_position)
+    length = np.linalg.norm(dist)
     if length == 0:
         return  # Prevent division by zero
-
-    grad /= length
-    lMtilde = lM / params['lMopt']
+    alpha = compliance / (dt ** 2)
+    lMtilde = length / params['lMopt']
     lMtilde_tensor = torch.tensor(lMtilde, dtype=torch.float32)
     lMtilde_tensor = lMtilde_tensor.requires_grad_(True)
     C_values = model(lMtilde_tensor)
-    # gradCon = torch.autograd.grad(C_values, lMtilde_tensor, grad_outputs=torch.ones_like(C_values), create_graph=True)[0].item()
-    delta_lagrangian_multiplier = -C_values.item() / (w * + alpha)
-
-    # Apply distance constraint
-    particle1_position += grad * delta_lagrangian_multiplier * weight
-    particle2_position += grad * -delta_lagrangian_multiplier * weight
+    grad1 = -normalized(dist)
+    grad2 = normalized(dist)     
+    denominator = weight * np.dot(grad1, grad1) + weight * np.dot(grad2, grad2)
+    delta_lagrangian_multiplier = -C_values.item() / (denominator + alpha)
+    particle1_position += grad1 * delta_lagrangian_multiplier * weight
+    particle2_position += grad2 * delta_lagrangian_multiplier * weight
 
 def update_muscle():
     global particle1_position, particle2_position, particle1_velocity, particle2_velocity, lMuscle, previous_particle2_position
     for _ in range(SUB_STEPS):
-        # Apply gravity to particle's velocity
-        particle1_velocity += force_gravity * (dt / SUB_STEPS) * weight
-        particle2_velocity += force_gravity * (dt / SUB_STEPS) * weight
-
         # Store the previous position of particle before updating
         previous_particle1_position = particle1_position.copy()
         previous_particle2_position = particle2_position.copy()
+        
+        # Apply gravity to particle's velocity
+        particle1_velocity += force_gravity * (dt / SUB_STEPS) * weight
+        particle2_velocity += force_gravity * (dt / SUB_STEPS) * weight
 
         # Update predicted position
         particle1_position += particle1_velocity * dt / SUB_STEPS

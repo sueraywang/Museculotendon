@@ -87,7 +87,7 @@ def update_muscle():
     total_force = force_muscle + force_gravity
 
     # Compute acceleration and update particles' positions
-    acceleration_1 = -total_force / mass
+    acceleration_1 = (-force_muscle + force_gravity) #-total_force / mass
     particle1_velocity += acceleration_1 * dt
     particle1_position += particle1_velocity * dt
 
