@@ -1,11 +1,11 @@
 import numpy as np
 import pandas as pd
-import random
+from Physics import compute_spring_force
 import sys
 sys.path.append('../Museculotendon')
 from testMuscle import *
 
-sample_size = 10000
+sample_size = 1000
 fixed_a = 1
 
 lMtilde = np.linspace(.30, 2.00, sample_size)

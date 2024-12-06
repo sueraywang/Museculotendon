@@ -60,7 +60,7 @@ class MLP(nn.Module):
 
 
 model = MLP(hidden_size=128, layers=6)
-model.load_state_dict(torch.load('musclePBDSim/mlp_model.pth'))
+model.load_state_dict(torch.load('musclePBDSim/forceConstraint.pth'))
 model.eval()
 
 # Data storage for plotting
