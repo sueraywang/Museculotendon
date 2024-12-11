@@ -9,69 +9,59 @@ import time
 import datetime
 import os
 
-
-# Read in data
+# Define constants
 sample_size = 1000
 dx = np.linspace(-2.00, 2.00, sample_size)
-
-# Convert data to PyTorch tensors and reshape for network input
 dx_tensor = torch.tensor(dx, dtype=torch.float32).reshape(-1, 1)
 
-# Create a TensorDataset
+# Use normalized data in the dataset
 dataset = TensorDataset(dx_tensor)
-
-# Split the dataset into training and validation sets
 train_size = int(0.8 * len(dataset))
 valid_size = len(dataset) - train_size
+# Re-split and create data loaders as before
 train, valid = torch.utils.data.random_split(dataset, [train_size, valid_size])
-
-# Create data loaders
 train_loader = DataLoader(train, batch_size=32, shuffle=True)
 valid_loader = DataLoader(valid, batch_size=32)
 
+# Define the model
 class MLP(nn.Module):
-    def __init__(self, input_size=1, hidden_size=64, output_size=1):
+    def __init__(self, input_size=1, hidden_size=128, output_size=1):
         super(MLP, self).__init__()
         self.fc1 = nn.Linear(input_size, hidden_size)
-        self.fc2 = nn.Linear(hidden_size, output_size)
+        self.fc2 = nn.Linear(hidden_size, hidden_size)
+        self.fc3 = nn.Linear(hidden_size, output_size)
         
         # Initialize weights using Xavier initialization
         nn.init.xavier_normal_(self.fc1.weight)
         nn.init.zeros_(self.fc1.bias)
         nn.init.xavier_normal_(self.fc2.weight)
         nn.init.zeros_(self.fc2.bias)
+        nn.init.xavier_normal_(self.fc3.weight)
+        nn.init.zeros_(self.fc3.bias)
 
     def forward(self, x):
-        x = F.relu(self.fc1(x))
-        x = self.fc2(x)
+        x = F.elu(self.fc1(x))
+        x = F.elu(self.fc2(x))
+        x = self.fc3(x)
         return x
 
-def custom_loss(mlp_model, batch):
-    dx = batch[0]
-    C_values = mlp_model(dx)
-    
-    # Scale the terms to help with numerical stability
-    term1 = 0.25 * dx**4
-    term2 = 0.5 * C_values**2
-    
-    # Compute scaled residual
-    residual = term1 - term2
-    loss = torch.mean(residual**2)
-    
+def custom_loss(model, batch):
+    dx = batch[0].detach().requires_grad_(True)
+    with torch.enable_grad():
+        C_values = model(dx)
+        C_grad = torch.autograd.grad(
+            outputs=C_values,
+            inputs=dx,
+            grad_outputs=torch.ones_like(C_values),
+            create_graph=True
+        )[0]
+        residual = C_values * C_grad - dx**3
+        loss = torch.mean(residual**2)
     return loss
 
-# Set random seed for reproducibility
-torch.manual_seed(42)
-
-# Instantiate the model and optimizer
-model = MLP(hidden_size=64)
-optimizer = optim.AdamW(
-    model.parameters(),
-    lr=0.0003,
-    weight_decay=1e-5,
-    betas=(0.9, 0.999),
-    eps=1e-8
-)
+# Instantiate the enhanced MLP
+model = MLP()
+optimizer = optim.Adam(model.parameters(), lr=0.001) 
 
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
     optimizer, 
@@ -127,7 +117,7 @@ for epoch in range(epochs):
     }, epoch)
 
     # Learning rate scheduling
-    scheduler.step(avg_valid_loss)
+    #scheduler.step(avg_valid_loss)
     
     # Save best model
     if avg_valid_loss < best_valid_loss:
@@ -138,7 +128,7 @@ for epoch in range(epochs):
             'optimizer_state_dict': optimizer.state_dict(),
             'train_loss': avg_train_loss,
             'valid_loss': avg_valid_loss,
-        }, 'musclePBDSim/best_model.pth')
+        }, 'musclePBDSim/springForceBestModel.pth')
 
 # Close the TensorBoard writer
 writer.close()
@@ -150,4 +140,4 @@ torch.save({
     'optimizer_state_dict': optimizer.state_dict(),
     'train_loss': avg_train_loss,
     'valid_loss': avg_valid_loss,
-}, 'musclePBDSim/final_model.pth')
+}, 'musclePBDSim/springForceFinalModel.pth')

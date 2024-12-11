@@ -6,25 +6,29 @@ import torch.nn as nn
 import torch.nn.functional as F 
 
 class MLP(nn.Module):
-    def __init__(self, input_size=1, hidden_size=64, output_size=1):
+    def __init__(self, input_size=1, hidden_size=128, output_size=1):
         super(MLP, self).__init__()
         self.fc1 = nn.Linear(input_size, hidden_size)
-        self.fc2 = nn.Linear(hidden_size, output_size)
+        self.fc2 = nn.Linear(hidden_size, hidden_size)
+        self.fc3 = nn.Linear(hidden_size, output_size)
         
         # Initialize weights using Xavier initialization
         nn.init.xavier_normal_(self.fc1.weight)
         nn.init.zeros_(self.fc1.bias)
         nn.init.xavier_normal_(self.fc2.weight)
         nn.init.zeros_(self.fc2.bias)
+        nn.init.xavier_normal_(self.fc3.weight)
+        nn.init.zeros_(self.fc3.bias)
 
     def forward(self, x):
-        x = F.relu(self.fc1(x))
-        x = self.fc2(x)
+        x = F.elu(self.fc1(x))
+        x = F.elu(self.fc2(x))
+        x = self.fc3(x)
         return x
 
 # Initialize model with the same architecture as during training
-model = MLP(hidden_size=64)
-checkpoint = torch.load('musclePBDSim/best_model.pth')
+model = MLP(hidden_size=128)
+checkpoint = torch.load('musclePBDSim/springForceBestModel.pth')
 model.load_state_dict(checkpoint['model_state_dict'])
 model.eval()
 
