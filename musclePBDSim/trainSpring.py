@@ -20,8 +20,8 @@ train_size = int(0.8 * len(dataset))
 valid_size = len(dataset) - train_size
 # Re-split and create data loaders as before
 train, valid = torch.utils.data.random_split(dataset, [train_size, valid_size])
-train_loader = DataLoader(train, batch_size=32, shuffle=True)
-valid_loader = DataLoader(valid, batch_size=32)
+train_loader = DataLoader(train, batch_size=1000, shuffle=True)
+valid_loader = DataLoader(valid, batch_size=1000)
 
 # Define the model
 class MLP(nn.Module):
