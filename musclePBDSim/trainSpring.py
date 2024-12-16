@@ -8,24 +8,40 @@ import numpy as np
 import time
 import datetime
 import os
+import pandas as pd
+from Physics import *
+
+"""
+df = pd.read_csv("musclePBDSim/dampedLinearSpringData.csv")
+dx_tensor = torch.tensor(df['dx'].values, dtype=torch.float32).reshape(-1, 1)
+dv_tensor = torch.tensor(df['dv'].values, dtype=torch.float32).reshape(-1, 1)
+
+# Create a TensorDataset
+dataset = TensorDataset(dx_tensor, dv_tensor)
+# Split the dataset into training and validation sets
+train, valid = torch.utils.data.random_split(dataset, [int(0.8 * len(dataset)), len(dataset) - int(0.8 * len(dataset))])
+train_loader = DataLoader(train, batch_size=1000, shuffle=True)
+valid_loader = DataLoader(valid, batch_size=1000)
+"""
 
 # Define constants
 sample_size = 1000
 dx = np.linspace(-2.00, 2.00, sample_size)
+dv = np.linspace(0.00, 0.00, sample_size)  # Example for dv
 dx_tensor = torch.tensor(dx, dtype=torch.float32).reshape(-1, 1)
+dv_tensor = torch.tensor(dv, dtype=torch.float32).reshape(-1, 1)
 
-# Use normalized data in the dataset
-dataset = TensorDataset(dx_tensor)
+# Combine dx and dv into the dataset
+dataset = TensorDataset(dx_tensor, dv_tensor)
 train_size = int(0.8 * len(dataset))
 valid_size = len(dataset) - train_size
-# Re-split and create data loaders as before
 train, valid = torch.utils.data.random_split(dataset, [train_size, valid_size])
 train_loader = DataLoader(train, batch_size=32, shuffle=True)
 valid_loader = DataLoader(valid, batch_size=32)
 
-# Define the model
+# Define the modified model
 class MLP(nn.Module):
-    def __init__(self, input_size=1, hidden_size=128, output_size=1):
+    def __init__(self, input_size=2, hidden_size=128, output_size=1):
         super(MLP, self).__init__()
         self.fc1 = nn.Linear(input_size, hidden_size)
         self.fc2 = nn.Linear(hidden_size, hidden_size)
@@ -45,32 +61,26 @@ class MLP(nn.Module):
         x = self.fc3(x)
         return x
 
+# Update the custom loss function
 def custom_loss(model, batch):
-    dx = batch[0].detach().requires_grad_(True)
+    dx, dv = batch[0], batch[1]  # Extract inputs
+    inputs = torch.cat([dx, dv], dim=1).detach().requires_grad_(True)
     with torch.enable_grad():
-        C_values = model(dx)
+        C_values = model(inputs)
         C_grad = torch.autograd.grad(
             outputs=C_values,
-            inputs=dx,
+            inputs=inputs,
             grad_outputs=torch.ones_like(C_values),
             create_graph=True
-        )[0]
-        residual = C_values * C_grad - dx**3
+        )[0][:, 0]  # Gradient w.r.t dx (first input)
+        residual = C_values * C_grad - dx  # Example residual, modify as needed
         loss = torch.mean(residual**2)
     return loss
 
 # Instantiate the enhanced MLP
-model = MLP()
-optimizer = optim.Adam(model.parameters(), lr=0.001) 
-
-scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-    optimizer, 
-    mode='min', 
-    factor=0.2,
-    patience=15,
-    verbose=True,
-    min_lr=1e-6
-)
+model = MLP(input_size=2)
+optimizer = optim.Adam(model.parameters(), lr=0.001)
+scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.99)
 
 # Initialize TensorBoard writer
 runTime = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -117,7 +127,7 @@ for epoch in range(epochs):
     }, epoch)
 
     # Learning rate scheduling
-    #scheduler.step(avg_valid_loss)
+    scheduler.step()
     
     # Save best model
     if avg_valid_loss < best_valid_loss:
@@ -128,7 +138,7 @@ for epoch in range(epochs):
             'optimizer_state_dict': optimizer.state_dict(),
             'train_loss': avg_train_loss,
             'valid_loss': avg_valid_loss,
-        }, 'musclePBDSim/springForceBestModel.pth')
+        }, 'musclePBDSim/springForceBestModel_withDamping.pth')
 
 # Close the TensorBoard writer
 writer.close()
@@ -140,4 +150,4 @@ torch.save({
     'optimizer_state_dict': optimizer.state_dict(),
     'train_loss': avg_train_loss,
     'valid_loss': avg_valid_loss,
-}, 'musclePBDSim/springForceFinalModel.pth')
+}, 'musclePBDSim/springForceFinalModel_withDamping.pth')

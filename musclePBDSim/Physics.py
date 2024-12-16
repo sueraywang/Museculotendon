@@ -7,6 +7,7 @@ MASS = 0.1  # Mass of particle (kg)
 GRAVITY = np.array([0, -9.8, 0])
 REST_LENGTH = 1.0
 SPRING_CONSTANT = 10  # Spring constant
+DAMPING_CONSTANT = 0.1
 DT = 1/60  # FPS = 60
 
 # XPBD constants
@@ -16,9 +17,9 @@ COMPLIANCE = 1/SPRING_CONSTANT
 # Objects' initial status
 INITIAL_LENGTH = 0.1
 XPBD_FIX_POS = np.array([0.5, 0.5, 0.0])
-NEWTONIAN_FIX_POS = np.array([-0.5, 0.5, 0.0])
+CLASSIC_FIX_POS = np.array([-0.5, 0.5, 0.0])
 XPBD_FREE_POS = XPBD_FIX_POS + np.array([0.0, -INITIAL_LENGTH, 0.0])
-NEWTONIAN_FREE_POS = NEWTONIAN_FIX_POS + np.array([0.0, -INITIAL_LENGTH, 0.0])
+CLASSIC_FREE_POS = CLASSIC_FIX_POS + np.array([0.0, -INITIAL_LENGTH, 0.0])
 
 # Helper functions
 def normalized(vec):
@@ -29,7 +30,7 @@ def compute_spring_force(pos1, pos2, k, rest_len):
     length = np.linalg.norm(displacement)
     if length == 0:
         return np.array([0.0, 0.0, 0.0])
-    force_magnitude = -k * (length - rest_len)**3
+    force_magnitude = -k * (length - rest_len)
     return force_magnitude * normalized(displacement)
 
 class Particle:
