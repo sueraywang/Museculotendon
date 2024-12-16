@@ -28,7 +28,7 @@ class MLP(nn.Module):
     
 # Initialize model with the same architecture as during training
 model = MLP(hidden_size=128)
-checkpoint = torch.load('musclePBDSim/springForceBestModel_withDamping.pth')
+checkpoint = torch.load('musclePBDSim/dampedLinearSpringBestModel.pth')
 model.load_state_dict(checkpoint['model_state_dict'])
 model.eval()
 
