@@ -38,6 +38,7 @@ class Particle:
         self.position = position
         self.prev_position = self.position.copy()
         self.velocity = np.zeros(3)
+        self.prev_velocity = self.velocity.copy()
         self.mass = mass
         self.weight = 1.0 / mass
         self.fixed = fixed

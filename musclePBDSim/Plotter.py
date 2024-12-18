@@ -17,7 +17,7 @@ class SimulationPlotter:
         self.line_x1, = self.ax.plot([], [], 'b-', label="Classic Current Length")
         self.ax.set_xlim(0, 10)
         self.ax.set_ylim(-1.0, 1.0)
-        self.ax.set_title('Cubic Spring Length')
+        self.ax.set_title('Linear Spring Length')
         self.ax.set_xlabel('time (s)')
         self.ax.set_ylabel('Lengths (m)')
         self.ax.legend(loc='upper right')

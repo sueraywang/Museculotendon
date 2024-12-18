@@ -6,59 +6,46 @@ sys.path.append('../Museculotendon')
 from testMuscle import *
 from Physics import *
 import matplotlib.pyplot as plt
-    
-"""
-DF = pd.DataFrame(np.column_stack([lMtilde, force]), 
-                               columns=['lMtilde', 'force'])
-DF.to_csv("musclePBDSim/lM_foce_data.csv")
-"""
 
 # Parameters
-m1, m2 = MASS, MASS
+m = MASS
 k = SPRING_CONSTANT 
-c = DAMPING_CONSTANT
-x1_0, x2_0 = CLASSIC_FIX_POS[1], CLASSIC_FREE_POS[1]
-v1_0, v2_0 = 0.0, 0.0   # Initial velocities
+d = DAMPING_CONSTANT
+x0 = CLASSIC_FREE_POS[1]
+v0 = 0.0
 
 # Time settings
-dt = 0.001           # Time step (s)
+dt = DT/SUB_STEPS           # Time step (s)
 t_max = 10          # Total simulation time (s)
 
 # Initialize time, positions, and velocities
-t = np.arange(0, t_max, dt)
-x1 = np.zeros_like(t)
-x2 = np.zeros_like(t)
-v1 = np.zeros_like(t)
-v2 = np.zeros_like(t)
-dx = np.zeros_like(t)
-dv = np.zeros_like(t)
+t = [0]
+x = [x0]
+v = [v0]
 
-# Set initial conditions
-x1[0] = x1_0
-x2[0] = x2_0
-v1[0] = v1_0
-v2[0] = v2_0
-dx[0] = x1[0] - x2[0] - REST_LENGTH
-dv[0] = v1[0] - v2[0]
-
+t_now = 0
+i = 0
 # Simulation loop
-for i in range(1, len(t)):
+while t_now < t_max:
     # Compute forces
-    spring_force = -k * (x1[i-1] - x2[i-1]-REST_LENGTH)
-    damping_force = -c * (v1[i-1] - v2[i-1])
+    spring_force = -k * (x[i]-REST_LENGTH) - d * v[i]
 
-    # Update accelerations
-    a1 = (spring_force + damping_force) / m1
-    a2 = (-spring_force - damping_force) / m2
+    # Update
+    a = spring_force / m
+    v_next = v[i] + a * dt
+    x_next = x[i] + v_next * dt
+    t_now = t[i] + dt
+    i += 1
+    v.append(v_next)
+    x.append(x_next)
+    t.append(t_now)
 
-    # Update velocities and positions using Euler's method
-    v1[i] = v1[i-1] + a1 * dt
-    v2[i] = v2[i-1] + a2 * dt
-    x1[i] = x1[i-1] + v1[i-1] * dt
-    x2[i] = x2[i-1] + v2[i-1] * dt
-    dx[i] = x1[i] - x2[i] - REST_LENGTH
-    dv[i] = v1[i] - v2[i]
-
+dx = []
+dv = []
+for i in x:
+    dx.append(i-REST_LENGTH)
+for i in v:
+    dv.append(DAMPING_CONSTANT / SPRING_CONSTANT * i)
 # Plot the results
 plt.figure(figsize=(10, 6))
 plt.plot(t, dx, label='Particle 1 (x1)')
@@ -73,5 +60,4 @@ plt.show()
 DF = pd.DataFrame(np.column_stack([dx, dv]), 
                                columns=['dx', 'dv'])
 DF.to_csv("musclePBDSim/dampedLinearSpringData.csv")
-
 

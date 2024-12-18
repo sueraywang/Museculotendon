@@ -11,25 +11,9 @@ import os
 import pandas as pd
 from Physics import *
 
-"""
 df = pd.read_csv("musclePBDSim/dampedLinearSpringData.csv")
 dx_tensor = torch.tensor(df['dx'].values, dtype=torch.float32).reshape(-1, 1)
 dv_tensor = torch.tensor(df['dv'].values, dtype=torch.float32).reshape(-1, 1)
-
-# Create a TensorDataset
-dataset = TensorDataset(dx_tensor, dv_tensor)
-# Split the dataset into training and validation sets
-train, valid = torch.utils.data.random_split(dataset, [int(0.8 * len(dataset)), len(dataset) - int(0.8 * len(dataset))])
-train_loader = DataLoader(train, batch_size=1000, shuffle=True)
-valid_loader = DataLoader(valid, batch_size=1000)
-"""
-
-# Define constants
-sample_size = 1000
-dx = np.linspace(-2.00, 2.00, sample_size)
-dv = np.linspace(0.00, 0.00, sample_size)  # Example for dv
-dx_tensor = torch.tensor(dx, dtype=torch.float32).reshape(-1, 1)
-dv_tensor = torch.tensor(dv, dtype=torch.float32).reshape(-1, 1)
 
 # Combine dx and dv into the dataset
 dataset = TensorDataset(dx_tensor, dv_tensor)
@@ -73,7 +57,7 @@ def custom_loss(model, batch):
             grad_outputs=torch.ones_like(C_values),
             create_graph=True
         )[0][:, 0]  # Gradient w.r.t dx
-        residual = C_values * C_grad - dx  # Example residual
+        residual = C_values * C_grad - dx - dv  # Example residual
         loss = torch.mean(residual**2)
     return loss
 
@@ -138,7 +122,7 @@ for epoch in range(epochs):
             'optimizer_state_dict': optimizer.state_dict(),
             'train_loss': avg_train_loss,
             'valid_loss': avg_valid_loss,
-        }, 'musclePBDSim/dampedLinearSpringBestModel.pth')
+        }, 'musclePBDSim/dampedLinearSpringBestModel_SampleData.pth')
 
 # Close the TensorBoard writer
 writer.close()
@@ -150,4 +134,4 @@ torch.save({
     'optimizer_state_dict': optimizer.state_dict(),
     'train_loss': avg_train_loss,
     'valid_loss': avg_valid_loss,
-}, 'musclePBDSim/dampedLinearSpringFinalModel.pth')
+}, 'musclePBDSim/dampedLinearSpringFinalModel_SampleData.pth')

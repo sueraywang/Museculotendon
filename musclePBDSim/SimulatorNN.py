@@ -28,7 +28,7 @@ class MLP(nn.Module):
     
 # Initialize model with the same architecture as during training
 model = MLP(hidden_size=128)
-checkpoint = torch.load('musclePBDSim/dampedLinearSpringBestModel.pth')
+checkpoint = torch.load('musclePBDSim/dampedLinearSpringBestModel_SampleData.pth')
 model.load_state_dict(checkpoint['model_state_dict'])
 model.eval()
 
@@ -62,40 +62,41 @@ class Simulator:
         for particle in self.particles:
             if particle.xpbd:
                 particle.prev_position = particle.position.copy()
+                particle.prev_velocity = particle.velocity.copy()
                 particle.velocity += self.gravity * self.sub_dt
                 particle.position += particle.velocity * self.sub_dt
 
         for constraint in self.constraints:
-            x1, x2 = constraint.p1.position, constraint.p2.position
-            dx = x1 - x2
+            dx = constraint.p1.position - constraint.p2.position
             n = dx / np.linalg.norm(dx)
+            dx_prev = constraint.p1.prev_position-constraint.p2.prev_position
             
-            x1_prev, x2_prev = constraint.p1.prev_position, constraint.p2.prev_position
-            dx_prev = x2_prev - x1_prev
-            l_prev = np.linalg.norm(dx_prev)
-            grad_dx = np.linalg.norm(dx) - l_prev
+            # We know it's 1-D so just take y for testify
+            dv = constraint.p1.velocity[1] - constraint.p2.velocity[1]
+            dv_prev = constraint.p1.prev_velocity[1] - constraint.p2.prev_velocity[1]
 
-            dx_tensor = torch.tensor(np.linalg.norm(dx) - REST_LENGTH, dtype=torch.float32).reshape(-1, 1)
-            dv_tensor = torch.tensor(0.00, dtype=torch.float32).reshape(-1, 1)
-            dx_prev_tensor = torch.tensor(np.linalg.norm(dx_prev) - REST_LENGTH, dtype=torch.float32).reshape(-1, 1)
+            dx_tensor = torch.tensor(np.linalg.norm(dx)-REST_LENGTH, dtype=torch.float32).reshape(-1, 1)
+            dv_tensor = torch.tensor(dv * DAMPING_CONSTANT / SPRING_CONSTANT, dtype=torch.float32).reshape(-1, 1)
             inputs = torch.cat([dx_tensor, dv_tensor], dim=1).detach().requires_grad_(True)
-            inputs_prev = torch.cat([dx_prev_tensor, dv_tensor], dim=1).detach().requires_grad_(True)
             C_values = model(inputs)
-            C_prev = model(inputs_prev)
             grad1 = n * torch.autograd.grad(C_values, inputs, grad_outputs=torch.ones_like(C_values), create_graph=True)[0][:, 0].item() 
             grad2 = -grad1
-            grad_prev = torch.autograd.grad(C_prev, inputs_prev, grad_outputs=torch.ones_like(C_prev), create_graph=True)[0][:, 0].item()
+            
+            dx_prev_tensor = torch.tensor(np.linalg.norm(dx_prev)-REST_LENGTH, dtype=torch.float32).reshape(-1, 1)
+            dv_prev_tensor = torch.tensor(dv_prev * DAMPING_CONSTANT/ SPRING_CONSTANT, dtype=torch.float32).reshape(-1, 1)
+            inputs_prev = torch.cat([dx_prev_tensor, dv_prev_tensor], dim=1).detach().requires_grad_(True)
+            C_values_prev = model(inputs_prev)
 
             w1, w2 = constraint.p1.weight, constraint.p2.weight
             alpha = constraint.compliance / (self.sub_dt * self.sub_dt)
             beta = DAMPING_CONSTANT * self.sub_dt**2
             gamma = (alpha * beta)/self.sub_dt 
-            denominator = (1 + gamma) * (w1 * np.dot(grad1, grad1) + w2 * np.dot(grad2, grad2)) + alpha
+            denominator = (1 + gamma) * (w1 * np.dot(grad1, grad1) + w2 * np.dot(grad2, grad2)) + alpha 
 
             if denominator == 0:
                 continue
 
-            delta_lambda = -(C_values.item() + alpha * constraint.lambda_acc + gamma * grad_prev) / denominator
+            delta_lambda = -(C_values.item() + alpha * constraint.lambda_acc + gamma * (C_values.item() - C_values_prev.item())/1000) / denominator
             constraint.p1.position += w1 * delta_lambda * grad1
             constraint.p2.position += w2 * delta_lambda * grad2  
 
