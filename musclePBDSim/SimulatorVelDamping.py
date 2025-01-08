@@ -41,21 +41,28 @@ class Simulator:
             dx_prev = constraint.p1.prev_position-constraint.p2.prev_position
             displacement = np.linalg.norm(dx) - REST_LENGTH
             
-            C = displacement**3#2 *(1/np.sqrt(2))
-            grad1 = n# * np.sqrt(2) * displacement
+            C = displacement**2 *(1/np.sqrt(2))
+            grad1 = n * np.sqrt(2) * displacement
             grad2 = -grad1
 
             w1, w2 = constraint.p1.weight, constraint.p2.weight
             alpha = constraint.compliance / (self.sub_dt * self.sub_dt)
             beta = DAMPING_CONSTANT * self.sub_dt**2
-            gamma = (alpha * beta)/self.sub_dt 
-
-            denominator = (1 + gamma) * (w1 * np.dot(grad1, grad1) + w2 * np.dot(grad2, grad2)) + alpha
+            denominator = (w1 * np.dot(grad1, grad1) + w2 * np.dot(grad2, grad2)) + alpha
             if denominator == 0:
                 continue
-            delta_lambda = -(C + alpha * constraint.lambda_acc + gamma * np.dot(grad1, dx - dx_prev)) / denominator
+            # Update position without damping
+            delta_lambda = -(C + alpha * constraint.lambda_acc) / denominator
             constraint.p1.position += w1 * delta_lambda * grad1
             constraint.p2.position += w2 * delta_lambda * grad2  
+            
+            # Update damping
+            relative_motion = dx - dx_prev
+            grad1 = n# * np.sqrt(2) * displacement
+            grad2 = -grad1
+            delta_lambda_damping = -(beta/self.sub_dt * np.dot(grad1,relative_motion)) / (beta/self.sub_dt * (w1 * np.dot(grad1, grad1) + w2 * np.dot(grad2, grad2)) + 1)
+            constraint.p1.position += w1 * delta_lambda_damping * grad1
+            constraint.p2.position += w2 * delta_lambda_damping * grad2  
 
             d = 0
             for particle in self.particles:
