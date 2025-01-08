@@ -30,7 +30,7 @@ def compute_spring_force(pos1, pos2, k, rest_len):
     length = np.linalg.norm(displacement)
     if length == 0:
         return np.array([0.0, 0.0, 0.0])
-    force_magnitude = -k * (length - rest_len)
+    force_magnitude = -k * (length - rest_len)**3
     return force_magnitude * normalized(displacement)
 
 class Particle:

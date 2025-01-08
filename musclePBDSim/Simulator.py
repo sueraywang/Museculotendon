@@ -36,33 +36,24 @@ class Simulator:
                 particle.position += particle.velocity * self.sub_dt
 
         for constraint in self.constraints:
-            x1, x2 = constraint.p1.position, constraint.p2.position
-            diff = x1 - x2
-            current_length = np.linalg.norm(diff)
-            if current_length < 1e-7:
-                continue
-
-            displacement = current_length - REST_LENGTH
-            n = diff / current_length
-            C = displacement
-            grad1 = n
-            grad2 = -grad1
+            dx = constraint.p1.position - constraint.p2.position
+            n = dx / np.linalg.norm(dx)
+            dx_prev = constraint.p1.prev_position-constraint.p2.prev_position
+            displacement = np.linalg.norm(dx) - REST_LENGTH
             
-            x1_prev, x2_prev = constraint.p1.prev_position, constraint.p2.prev_position
-            dx_prev = x2_prev - x1_prev
-            l_prev = np.linalg.norm(dx_prev)
-            grad_dx = current_length - l_prev
+            C = displacement**3#2 *(1/np.sqrt(2))
+            grad1 = n# * np.sqrt(2) * displacement
+            grad2 = -grad1
 
             w1, w2 = constraint.p1.weight, constraint.p2.weight
             alpha = constraint.compliance / (self.sub_dt * self.sub_dt)
             beta = DAMPING_CONSTANT * self.sub_dt**2
             gamma = (alpha * beta)/self.sub_dt 
-            denominator = (1 + gamma) * (w1 * np.dot(grad1, grad1) + w2 * np.dot(grad2, grad2)) + alpha
 
+            denominator = (1 + gamma) * (w1 * np.dot(grad1, grad1) + w2 * np.dot(grad2, grad2)) + alpha
             if denominator == 0:
                 continue
-
-            delta_lambda = -(C + alpha * constraint.lambda_acc + gamma * grad_dx) / denominator
+            delta_lambda = -(C + alpha * constraint.lambda_acc + gamma * np.dot(grad1, dx - dx_prev)) / denominator
             constraint.p1.position += w1 * delta_lambda * grad1
             constraint.p2.position += w2 * delta_lambda * grad2  
 

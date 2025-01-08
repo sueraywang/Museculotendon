@@ -11,12 +11,12 @@ import os
 import pandas as pd
 from Physics import *
 
-df = pd.read_csv("musclePBDSim/dampedLinearSpringData.csv")
-dx_tensor = torch.tensor(df['dx'].values, dtype=torch.float32).reshape(-1, 1)
-dv_tensor = torch.tensor(df['dv'].values, dtype=torch.float32).reshape(-1, 1)
+sample_size = 1000
+dx = np.linspace(-2.00, 2.00, sample_size)
+dx_tensor = torch.tensor(dx, dtype=torch.float32).reshape(-1, 1)
 
 # Combine dx and dv into the dataset
-dataset = TensorDataset(dx_tensor, dv_tensor)
+dataset = TensorDataset(dx_tensor)
 train_size = int(0.8 * len(dataset))
 valid_size = len(dataset) - train_size
 train, valid = torch.utils.data.random_split(dataset, [train_size, valid_size])
@@ -25,7 +25,7 @@ valid_loader = DataLoader(valid, batch_size=1000)
 
 # Define the modified model
 class MLP(nn.Module):
-    def __init__(self, input_size=2, hidden_size=128, output_size=1):
+    def __init__(self, input_size=1, hidden_size=128, output_size=1):
         super(MLP, self).__init__()
         self.fc1 = nn.Linear(input_size, hidden_size)
         self.fc2 = nn.Linear(hidden_size, hidden_size)
@@ -47,8 +47,8 @@ class MLP(nn.Module):
 
 # Update the custom loss function
 def custom_loss(model, batch):
-    dx, dv = batch[0], batch[1]  # Extract inputs
-    inputs = torch.cat([dx, dv], dim=1).detach().requires_grad_(True)
+    dx = batch[0]  # Extract inputs
+    inputs = torch.cat([dx], dim=1).detach().requires_grad_(True)
     with torch.enable_grad():
         C_values = model(inputs)
         C_grad = torch.autograd.grad(
@@ -57,12 +57,12 @@ def custom_loss(model, batch):
             grad_outputs=torch.ones_like(C_values),
             create_graph=True
         )[0][:, 0]  # Gradient w.r.t dx
-        residual = C_values * C_grad - dx - dv  # Example residual
+        residual = C_values * C_grad - dx**3  # Example residual
         loss = torch.mean(residual**2)
     return loss
 
 # Instantiate the enhanced MLP
-model = MLP(input_size=2)
+model = MLP()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.99)
 
@@ -122,7 +122,7 @@ for epoch in range(epochs):
             'optimizer_state_dict': optimizer.state_dict(),
             'train_loss': avg_train_loss,
             'valid_loss': avg_valid_loss,
-        }, 'musclePBDSim/dampedLinearSpringBestModel_SampleData.pth')
+        }, 'musclePBDSim/linearSpringBestModel.pth')
 
 # Close the TensorBoard writer
 writer.close()
@@ -134,4 +134,4 @@ torch.save({
     'optimizer_state_dict': optimizer.state_dict(),
     'train_loss': avg_train_loss,
     'valid_loss': avg_valid_loss,
-}, 'musclePBDSim/dampedLinearSpringFinalModel_SampleData.pth')
+}, 'musclePBDSim/linearSpringFinalModel.pth')
