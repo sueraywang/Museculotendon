@@ -1,0 +1,56 @@
+CXX = g++
+CXXFLAGS = -std=c++14 -O3 -Wall -Wextra
+LDFLAGS = -lm
+
+# Source files
+SRCS = generate_simple_data.cpp \
+       QuinticBezierCurve.cpp \
+       SmoothSegmentedFunction.cpp \
+       CurveActiveForceLength.cpp \
+       CurveFiberForceLength.cpp
+
+# Object files
+OBJS = $(SRCS:.cpp=.o)
+
+# Output binary
+TARGET = generate_simple_data
+
+# Default target
+all: $(TARGET)
+
+# Linking
+$(TARGET): $(OBJS)
+	$(CXX) $(OBJS) -o $(TARGET) $(LDFLAGS)
+
+# Compiling
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Clean
+clean:
+	rm -f $(OBJS) $(TARGET)
+
+# Run with default parameters (same as Python example)
+run_small:
+	./$(TARGET) --samples 10 --act-samples 5 --pen-samples 5
+
+# Run with medium dataset
+run_medium:
+	./$(TARGET) --samples 100 --act-samples 100 --pen-samples 100 --batch-lm 10 --batch-act 20 --batch-pen 20
+
+# Run with large dataset
+run_large:
+	./$(TARGET) --samples 2000 --act-samples 1000 --pen-samples 1000 --batch-lm 100 --batch-act 100 --batch-pen 100
+
+# Run with very large dataset
+run_xl:
+	./$(TARGET) --samples 5000 --act-samples 2000 --pen-samples 2000 --batch-lm 50 --batch-act 50 --batch-pen 50
+
+# Load and visualize results
+visualize:
+	python load_simple_data.py
+
+# Run the full pipeline with small dataset
+pipeline: clean all run_small visualize
+
+.PHONY: all clean run_small run_medium run_large run_xl visualize pipeline

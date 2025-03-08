@@ -1,0 +1,46 @@
+CXX = g++
+CXXFLAGS = -std=c++14 -O3 -Wall -Wextra
+LDFLAGS = -lm
+
+# Source files
+SRCS = main.cpp \
+       Muscle.cpp \
+       QuinticBezierCurve.cpp \
+       SmoothSegmentedFunction.cpp \
+       CurveActiveForceLength.cpp \
+       CurveFiberForceLength.cpp \
+       CurveForceVelocity.cpp \
+       CurveTendonForceLength.cpp
+
+# Object files
+OBJS = $(SRCS:.cpp=.o)
+
+# Output binary
+TARGET = muscle_force_calculator
+
+# Default target
+all: $(TARGET)
+
+# Linking
+$(TARGET): $(OBJS)
+	$(CXX) $(OBJS) -o $(TARGET) $(LDFLAGS)
+
+# Compiling
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Clean
+clean:
+	rm -f $(OBJS) $(TARGET)
+
+# Dependencies
+main.o: main.cpp Muscle.h
+Muscle.o: Muscle.cpp Muscle.h NewtonSolver.h CurveActiveForceLength.h CurveFiberForceLength.h CurveForceVelocity.h CurveTendonForceLength.h
+QuinticBezierCurve.o: QuinticBezierCurve.cpp QuinticBezierCurve.h NewtonSolver.h
+SmoothSegmentedFunction.o: SmoothSegmentedFunction.cpp SmoothSegmentedFunction.h QuinticBezierCurve.h
+CurveActiveForceLength.o: CurveActiveForceLength.cpp CurveActiveForceLength.h CurveBase.h SmoothSegmentedFunction.h
+CurveFiberForceLength.o: CurveFiberForceLength.cpp CurveFiberForceLength.h CurveBase.h SmoothSegmentedFunction.h
+CurveForceVelocity.o: CurveForceVelocity.cpp CurveForceVelocity.h CurveBase.h SmoothSegmentedFunction.h
+CurveTendonForceLength.o: CurveTendonForceLength.cpp CurveTendonForceLength.h CurveBase.h SmoothSegmentedFunction.h
+
+.PHONY: all clean
