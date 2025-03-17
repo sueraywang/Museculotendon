@@ -1,0 +1,5 @@
+# Ignore the TrainingData folder
+TrainingData/
+
+# Ignore all .log files
+*.log
