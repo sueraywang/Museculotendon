@@ -41,8 +41,8 @@ class Simulator:
             dx_prev = constraint.p1.prev_position-constraint.p2.prev_position
             displacement = np.linalg.norm(dx) - REST_LENGTH
             
-            C = displacement**2 *(1/np.sqrt(2))
-            grad1 = n * np.sqrt(2) * displacement
+            C = displacement#**2 *(1/np.sqrt(2))
+            grad1 = n# * np.sqrt(2) * displacement
             grad2 = -grad1
 
             w1, w2 = constraint.p1.weight, constraint.p2.weight

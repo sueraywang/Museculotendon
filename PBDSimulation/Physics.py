@@ -59,8 +59,8 @@ MUSCLE_COMPLIANCE = 1/params['fMopt']
 
 # Objects' initial status
 INITIAL_LENGTH = 0.1
-XPBD_FIX_POS = np.array([0.5, 0.5, 0.0])
-CLASSIC_FIX_POS = np.array([-0.5, 0.5, 0.0])
+XPBD_FIX_POS = np.array([0.5, INITIAL_LENGTH, 0.0])
+CLASSIC_FIX_POS = np.array([-0.5, INITIAL_LENGTH, 0.0])
 XPBD_FREE_POS = XPBD_FIX_POS + np.array([0.0, -INITIAL_LENGTH, 0.0])
 CLASSIC_FREE_POS = CLASSIC_FIX_POS + np.array([0.0, -INITIAL_LENGTH, 0.0])
 
@@ -73,14 +73,14 @@ def compute_spring_force(pos1, pos2, k, rest_len):
     length = np.linalg.norm(displacement)
     if length == 0:
         return np.array([0.0, 0.0, 0.0])
-    force_magnitude = -k * (length - rest_len)**3
+    force_magnitude = -k * (length - rest_len)#**3
     return force_magnitude * normalized(displacement)
 
-def muscleForce(lMtilde, act=1.0, pennation = 0.0):
+def muscleForce(lMtilde, act=1.0, pennation=0.0):
     afl = curves['AFL'].calcValue(lMtilde)
     pfl = curves['PFL'].calcValue(lMtilde)
     fM = act * afl + pfl
-    return fM * np.cos(np.radians(pennation))
+    return fM * np.cos(pennation)
 
 class Particle:
     def __init__(self, position, mass=MASS, fixed=False, xpbd=False):

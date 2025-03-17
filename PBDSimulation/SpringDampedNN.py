@@ -28,7 +28,7 @@ class MLP(nn.Module):
     
 # Initialize model with the same architecture as during training
 model = MLP(hidden_size=128)
-checkpoint = torch.load('TrainedModels/cubic_spring_best_model.pth')
+checkpoint = torch.load('TrainedModels/cubic_spring_model.pth')
 model.load_state_dict(checkpoint['model_state_dict'])
 model.eval()
 

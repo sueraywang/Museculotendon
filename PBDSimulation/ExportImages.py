@@ -58,7 +58,7 @@ class MLP(nn.Module):
 
 
 model = MLP()
-checkpoint = torch.load('TrainedModels/muscle_length_and_act_best_model.pth')
+checkpoint = torch.load('TrainedModels/muscle_length_act_model.pth')
 model.load_state_dict(checkpoint['model_state_dict'])
 model.eval()
 

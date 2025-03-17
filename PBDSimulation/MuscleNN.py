@@ -28,7 +28,7 @@ class MLP(nn.Module):
 
 
 model = MLP()
-checkpoint = torch.load('TrainedModels/gpu_muscle_length_and_act_best_model.pth')
+checkpoint = torch.load('TrainedModels/muscle_length_act_model.pth')
 model.load_state_dict(checkpoint['model_state_dict'])
 model.eval()
 
@@ -50,15 +50,15 @@ class Simulator:
             Constraint(self.particles[0], self.particles[1], MUSCLE_COMPLIANCE)
         ]
 
-    def step(self, activation):
+    def step(self, activation, pennation):
         for constraint in self.constraints:
             constraint.lambda_acc = 0.0
 
         for _ in range(self.num_substeps):
-            self.xpbd_substep(activation)
-            self.classic_substep(activation)
+            self.xpbd_substep(activation, pennation)
+            self.classic_substep(activation, pennation)
     #"""
-    def xpbd_substep(self, activation):
+    def xpbd_substep(self, activation, pennation):
         for particle in self.particles:
             if particle.xpbd:
                 particle.prev_position = particle.position.copy()
@@ -95,12 +95,12 @@ class Simulator:
                     particle.velocity = (particle.position - particle.prev_position) / self.sub_dt
                     particle.position -= d
 
-    def classic_substep(self, activation):
+    def classic_substep(self, activation, pennation):
         moving_particle = self.particles[3]
         fixed_particle = self.particles[2]
         dx = fixed_particle.position - moving_particle.position
         lMtilde = np.linalg.norm(dx) / params['lMopt']
-        spring_force = muscleForce(lMtilde, activation) * params['fMopt'] * normalized(dx)
+        spring_force = muscleForce(lMtilde, activation, pennation) * params['fMopt'] * normalized(dx)
 
         moving_particle.velocity += ((spring_force + moving_particle.mass * self.gravity) / moving_particle.mass) * self.sub_dt
         moving_particle.position += moving_particle.velocity * self.sub_dt
