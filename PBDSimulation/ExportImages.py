@@ -1,10 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
 from matplotlib import rc
 from scipy.interpolate import griddata
+from Physics import *
 
 # View angles
 ELEV = 30
@@ -33,29 +31,6 @@ muscle_force_flat = muscle_force.flatten()
 # Create input array with shape (num_samples, 2)
 inputs = np.column_stack((lMtilde_flat, activation_flat))
 outputs = muscle_force_flat.reshape(-1, 1)
-
-# Define the model
-class MLP(nn.Module):
-    def __init__(self, input_size=2, hidden_size=128, output_size=1):
-        super(MLP, self).__init__()
-        self.fc1 = nn.Linear(input_size, hidden_size)
-        self.fc2 = nn.Linear(hidden_size, hidden_size)
-        self.fc3 = nn.Linear(hidden_size, output_size)
-        
-        # Initialize weights using Xavier initialization
-        nn.init.xavier_normal_(self.fc1.weight)
-        nn.init.zeros_(self.fc1.bias)
-        nn.init.xavier_normal_(self.fc2.weight)
-        nn.init.zeros_(self.fc2.bias)
-        nn.init.xavier_normal_(self.fc3.weight)
-        nn.init.zeros_(self.fc3.bias)
-
-    def forward(self, x):
-        x = F.elu(self.fc1(x))
-        x = F.elu(self.fc2(x))
-        x = self.fc3(x)
-        return x
-
 
 model = MLP()
 checkpoint = torch.load('TrainedModels/muscle_length_act_model.pth')

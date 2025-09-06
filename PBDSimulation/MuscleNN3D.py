@@ -1,34 +1,16 @@
 # SimulatorNN.py
 from Physics import *
-import torch
-import torch.nn as nn
-import torch.nn.functional as F 
 
-# Define the model
-class MLP(nn.Module):
-    def __init__(self, input_size=3, hidden_size=128, output_size=1):
-        super(MLP, self).__init__()
-        self.fc1 = nn.Linear(input_size, hidden_size)
-        self.fc2 = nn.Linear(hidden_size, hidden_size)
-        self.fc3 = nn.Linear(hidden_size, output_size)
-        
-        # Initialize weights using Xavier initialization
-        nn.init.xavier_normal_(self.fc1.weight)
-        nn.init.zeros_(self.fc1.bias)
-        nn.init.xavier_normal_(self.fc2.weight)
-        nn.init.zeros_(self.fc2.bias)
-        nn.init.xavier_normal_(self.fc3.weight)
-        nn.init.zeros_(self.fc3.bias)
-
-    def forward(self, x):
-        x = F.elu(self.fc1(x))
-        x = F.elu(self.fc2(x))
-        x = self.fc3(x)
-        return x
-
-
-model = MLP()
-checkpoint = torch.load('TrainedModels/muscle_3inputs_model.pth')
+if RENDER_MT:
+    model = MLP(input_size=3, hidden_size=256, 
+            output_size=1, num_layers=5, 
+            activation='tanh')
+    checkpoint = torch.load(os.path.join('TrainedModels/Muscles', "lm_lmt_model.pth"))
+else: 
+    model = MLP(input_size=model_params['input_size'], hidden_size=model_params['num_width'], 
+                output_size=model_params['output_size'], num_layers=model_params['num_layer'], 
+                activation=model_params['activation_func'])
+    checkpoint = torch.load(os.path.join('TrainedModels/Muscles', model_params['model_name']))
 model.load_state_dict(checkpoint['model_state_dict'])
 model.eval()
 
@@ -37,7 +19,7 @@ class Simulator:
         self.dt = DT
         self.num_substeps = SUB_STEPS
         self.sub_dt = self.dt / self.num_substeps
-        self.gravity = GRAVITY
+        self.penn = 0.0
 
         self.particles = [
             Particle(XPBD_FIX_POS.copy(), fixed=True, xpbd=True),   
@@ -46,68 +28,79 @@ class Simulator:
             Particle(CLASSIC_FREE_POS.copy())
         ]
 
-        self.constraints = [
-            Constraint(self.particles[0], self.particles[1], MUSCLE_COMPLIANCE)
-        ]
-
-    def step(self, activation, pennation):
-        for constraint in self.constraints:
-            constraint.lambda_acc = 0.0
-
+    def step(self, activation):
         for _ in range(self.num_substeps):
-            self.xpbd_substep(activation, pennation)
-            self.classic_substep(activation, pennation)
-    #"""
-    def xpbd_substep(self, activation, pennation):
-        for particle in self.particles:
-            if particle.xpbd:
-                particle.prev_position = particle.position.copy()
-                particle.prev_velocity = particle.velocity.copy()
-                particle.velocity += self.gravity * self.sub_dt
-                particle.position += particle.velocity * self.sub_dt
+            penn1 = self.xpbd_substep(activation)
+            penn2 = self.classic_substep(activation)
+            if penn1 - penn2 < 1e-3:
+                self.penn = penn1   
+                
 
-        for constraint in self.constraints:
-            dx = -(constraint.p1.position - constraint.p2.position)
-            n = dx / np.linalg.norm(dx)
-
-            w1, w2 = constraint.p1.weight, constraint.p2.weight
-            alpha = constraint.compliance / (self.sub_dt * self.sub_dt)
-            
-            if (np.linalg.norm(dx)/params['lMopt']) < 0 or (np.linalg.norm(dx)/params['lMopt']) > 5:
-                print(f"lMtilde exceeds the bound. It's {(np.linalg.norm(dx)/params['lMopt'])}") 
-            
-            dx_tensor = torch.tensor(np.linalg.norm(dx)/params['lMopt'], dtype=torch.float32).reshape(-1, 1)
-            activation = torch.tensor(activation, dtype=torch.float32).reshape(-1, 1)
-            pennation = torch.tensor(pennation, dtype=torch.float32).reshape(-1, 1)
-            inputs = torch.cat([dx_tensor, activation, pennation], dim=1).detach().requires_grad_(True)
-            C_values = model(inputs)
-            grad1 = n * torch.autograd.grad(C_values, inputs, grad_outputs=torch.ones_like(C_values), create_graph=True)[0][:, 0].item() 
-            grad2 = -grad1
-            denominator = (w1 * np.dot(grad1, grad1) + w2 * np.dot(grad2, grad2)) + alpha
-            if denominator == 0:
-                continue
-            delta_lambda = -C_values.item() / denominator
-            constraint.p1.position += w1 * delta_lambda * grad1
-            constraint.p2.position += w2 * delta_lambda * grad2  
-
-            d = 0
-            for particle in self.particles:
-                if particle.fixed and particle.xpbd:
-                    d = particle.position - particle.prev_position
-            for particle in self.particles:
-                if particle.xpbd:
-                    particle.velocity = (particle.position - particle.prev_position) / self.sub_dt
-                    particle.position -= d
-
-    def classic_substep(self, activation, pennation):
-        moving_particle = self.particles[3]
-        fixed_particle = self.particles[2]
-        dx = fixed_particle.position - moving_particle.position
-        lMtilde = np.linalg.norm(dx) / params['lMopt']
-        spring_force = muscleForce(lMtilde, activation, pennation) * params['fMopt'] * normalized(dx)
-
-        moving_particle.velocity += ((spring_force + moving_particle.mass * self.gravity) / moving_particle.mass) * self.sub_dt
+    def xpbd_substep(self, activation):
+        fixed_particle = self.particles[0]
+        moving_particle = self.particles[1]
+        moving_particle.prev_position = moving_particle.position.copy()
+        moving_particle.velocity += self.gravity * self.sub_dt
         moving_particle.position += moving_particle.velocity * self.sub_dt
-        fixed_particle.velocity += ((-spring_force + fixed_particle.mass * self.gravity) / fixed_particle.mass) * self.sub_dt
-        d = fixed_particle.velocity * self.sub_dt
-        moving_particle.position -= d
+
+        dx = fixed_particle.position - moving_particle.position
+        dx_prev = fixed_particle.prev_position-moving_particle.prev_position
+        relative_motion = dx - dx_prev
+        relative_vel = fixed_particle.velocity - moving_particle.velocity
+        penn = np.arcsin(params.h/np.linalg.norm(dx))
+        n = dx / np.linalg.norm(dx)
+
+        w2 = moving_particle.weight
+        alpha = MUSCLE_COMPLIANCE / (self.sub_dt * self.sub_dt)
+        beta = -params.beta * self.sub_dt**2 / params.lMopt / params.vMmax * params.fMopt * math.cos(penn)
+        #gamma = alpha * beta / self.sub_dt
+        
+        if (np.linalg.norm(dx)/params.lMopt) < 0 or (np.linalg.norm(dx)/params.lMopt) > 2:
+            print(f"lMtilde exceeds the bound. It's {(np.linalg.norm(dx)/params.lMopt)}") 
+        
+        dx_tensor = torch.tensor(np.linalg.norm(dx)/params.lMopt, dtype=torch.float32).reshape(-1, 1)
+        vel_tensor = torch.tensor(np.dot(relative_vel, normalized(dx)) / (params.lMopt * params.vMmax), dtype=torch.float32).reshape(-1, 1)
+        activation = torch.tensor(activation, dtype=torch.float32).reshape(-1, 1)
+        alphaMopt = torch.tensor(params.alphaMopt, dtype=torch.float32).reshape(-1, 1)
+        inputs = torch.cat([dx_tensor, activation, vel_tensor], dim=1).detach().requires_grad_(True)
+        C = model(inputs)
+        C_values = model(inputs).item()
+        grad = torch.autograd.grad(C, inputs, grad_outputs=torch.ones_like(C), create_graph=True)[0][:, 0].item() 
+        denominator = (w2 * np.dot(grad, grad)) + alpha
+        #denom1 = (1 + gamma) * (w1 * np.dot(grad, grad) + w2 * np.dot(grad, grad)) + alpha
+        
+        delta_lambda = -C_values / denominator * math.cos(penn)
+        moving_particle.position += w2 * delta_lambda * grad * n
+        
+        """
+        loss = muscle_force_full(np.linalg.norm(dx)/params.lMopt, activation, np.dot(relative_vel, normalized(dx)) / (params.lMopt * params.vMmax), penn) + C_values * grad
+        print(loss)
+        """
+        
+        """
+        # Update damping
+        grad = normalized(dx)# relative_vel / np.linalg.norm(relative_vel)
+        delta_lambda_damping = -(beta/self.sub_dt * np.dot(grad, relative_motion)) / (beta/self.sub_dt * w2 + 1)
+        moving_particle.position += w2 * delta_lambda_damping * grad
+        #"""
+        
+        moving_particle.velocity = (moving_particle.position - moving_particle.prev_position) / self.sub_dt
+        
+        return penn
+
+    def classic_substep(self, activation):
+        fixed_particle = self.particles[2]
+        moving_particle = self.particles[3]
+        dx = fixed_particle.position - moving_particle.position
+        l_m = np.linalg.norm(dx)
+        penn = np.arcsin(params.h/l_m)
+        relative_vel = fixed_particle.velocity - moving_particle.velocity
+        v_m = np.dot(relative_vel, normalized(dx))
+        
+        f_muscle = Muscle.muscle_force(v_m, l_m, activation, penn, params) * normalized(dx)
+
+        # Update velocity and position
+        moving_particle.velocity += ((f_muscle + moving_particle.mass * self.gravity) / moving_particle.mass) * self.sub_dt
+        moving_particle.position += moving_particle.velocity * self.sub_dt
+        
+        return penn
