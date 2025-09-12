@@ -12,7 +12,7 @@ import os
 import argparse
 from torch.utils.data import TensorDataset, DataLoader
 from torch.utils.tensorboard import SummaryWriter
-from Physics import curves, params, model_params
+from Physics import params, model_params
 
 # Model definition
 class MLP(nn.Module):
@@ -78,11 +78,11 @@ class MLP(nn.Module):
 
 # Function that calculates muscle force
 def muscle_force(lMtilde: float, act: float, vMtilde: float) -> float:
-    afl = curves['AFL'].calc_value(lMtilde)
-    pfl = curves['PFL'].calc_value(lMtilde)
-    fv = curves['FV'].calc_value(vMtilde)
+    afl = params.curve_afl.calc_value(lMtilde)
+    pfl = params.curve_pfl.calc_value(lMtilde)
+    fv = params.curve_fv.calc_value(vMtilde)
     
-    return act * afl * fv + pfl# + params['beta'] * vMtilde
+    return act * afl * fv + pfl# + params.beta * vMtilde
 
 # Function that calculates df/dl during data generation
 def muscle_force_derivative(lMtilde: float, act: float, vMtilde: float) -> np.ndarray:
@@ -91,13 +91,13 @@ def muscle_force_derivative(lMtilde: float, act: float, vMtilde: float) -> np.nd
     Returns: [dF/dlMtilde, dF/dvMtilde]
     """
     # Get values and derivatives from curves
-    res_afl = curves['AFL'].calc_val_deriv(lMtilde)
+    res_afl = params.curve_afl.calc_val_deriv(lMtilde)
     afl = res_afl[0]
     afl_deriv = res_afl[1]  # derivative w.r.t lMtilde
     
-    pfl_deriv = curves['PFL'].calc_derivative(lMtilde, 1) # derivative w.r.t lMtilde
+    pfl_deriv = params.curve_pfl.calc_derivative(lMtilde, 1) # derivative w.r.t lMtilde
     
-    res_fv = curves['FV'].calc_val_deriv(vMtilde)
+    res_fv = params.curve_fv.calc_val_deriv(vMtilde)
     fv = res_fv[0]
     fv_deriv = res_fv[1]  # derivative w.r.t vMtilde
     
@@ -106,7 +106,7 @@ def muscle_force_derivative(lMtilde: float, act: float, vMtilde: float) -> np.nd
     dF_dlMtilde = act * afl_deriv * fv + pfl_deriv
     
     # ∂F/∂vMtilde = fMopt * (act * afl * ∂fv/∂vMtilde + beta)
-    dF_dvMtilde = act * afl * fv_deriv + params['beta']
+    dF_dvMtilde = act * afl * fv_deriv + params.beta
     
     return np.array([dF_dlMtilde, dF_dvMtilde])
 

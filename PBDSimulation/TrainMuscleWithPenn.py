@@ -13,11 +13,11 @@ from Physics import *
 
 # Function that calculates muscle force
 def muscle_force(lMtilde: float, act: float, vMtilde: float, alphaMopt: float) -> float:
-    afl = curves['AFL'].calc_value(lMtilde)
-    pfl = curves['PFL'].calc_value(lMtilde)
-    fv = curves['FV'].calc_value(vMtilde)
+    afl = params.curve_afl.calc_value(lMtilde)
+    pfl = params.curve_pfl.calc_value(lMtilde)
+    fv = params.curve_fv.calc_value(vMtilde)
     penn = np.arcsin(np.sin(alphaMopt)/lMtilde)
-    f_m = act * afl * fv + pfl + params['beta'] * vMtilde
+    f_m = act * afl * fv + pfl + params.beta * vMtilde
     
     return f_m * np.cos(penn)
 
@@ -32,15 +32,15 @@ def muscle_force_derivative(lMtilde: float, act: float, vMtilde: float, alphaMop
     lMtilde = max(lMtilde, 1e-5)
     
     # Get values and derivatives from curves
-    res_afl = curves['AFL'].calc_val_deriv(lMtilde)
+    res_afl = params.curve_afl.calc_val_deriv(lMtilde)
     afl = res_afl[0]
     afl_deriv = res_afl[1]  # derivative w.r.t lMtilde
     
-    res_pfl = curves['PFL'].calc_val_deriv(lMtilde)
+    res_pfl = params.curve_pfl.calc_val_deriv(lMtilde)
     pfl = res_pfl[0]
     pfl_deriv = res_pfl[1] # derivative w.r.t lMtilde
     
-    res_fv = curves['FV'].calc_val_deriv(vMtilde)
+    res_fv = params.curve_fv.calc_val_deriv(vMtilde)
     fv = res_fv[0]
     fv_deriv = res_fv[1]  # derivative w.r.t vMtilde
     
@@ -51,11 +51,11 @@ def muscle_force_derivative(lMtilde: float, act: float, vMtilde: float, alphaMop
     sin_penn = np.sin(penn)
     
     # Compute f_m (muscle force without pennation)
-    f_m = act * afl * fv + pfl + params['beta'] * vMtilde
+    f_m = act * afl * fv + pfl + params.beta * vMtilde
     
     # Partial derivatives of f_m
     df_m_dlMtilde = act * afl_deriv * fv + pfl_deriv
-    df_m_dvMtilde = act * afl * fv_deriv + params['beta']
+    df_m_dvMtilde = act * afl * fv_deriv + params.beta
     
     # Partial derivative of pennation angle w.r.t lMtilde
     # dpenn/dlMtilde = d/dlMtilde[arcsin(sin(alphaMopt)/lMtilde)]
@@ -518,10 +518,10 @@ def main():
     # Create model
     model = MLP(
         input_size=model_params['input_size'],
-        hidden_size=args.hidden_size,
+        hidden_size=model_params['num_width'],
         output_size=model_params['output_size'],
-        num_layers=args.num_layers,
-        activation=args.activation
+        num_layers=model_params['num_layer'],
+        activation=model_params['activation_func'],
     )
     
     total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)

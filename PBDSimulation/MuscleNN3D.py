@@ -40,7 +40,7 @@ class Simulator:
         fixed_particle = self.particles[0]
         moving_particle = self.particles[1]
         moving_particle.prev_position = moving_particle.position.copy()
-        moving_particle.velocity += self.gravity * self.sub_dt
+        moving_particle.velocity += GRAVITY * self.sub_dt
         moving_particle.position += moving_particle.velocity * self.sub_dt
 
         dx = fixed_particle.position - moving_particle.position
@@ -77,7 +77,7 @@ class Simulator:
         print(loss)
         """
         
-        """
+        #"""
         # Update damping
         grad = normalized(dx)# relative_vel / np.linalg.norm(relative_vel)
         delta_lambda_damping = -(beta/self.sub_dt * np.dot(grad, relative_motion)) / (beta/self.sub_dt * w2 + 1)
@@ -100,7 +100,7 @@ class Simulator:
         f_muscle = Muscle.muscle_force(v_m, l_m, activation, penn, params) * normalized(dx)
 
         # Update velocity and position
-        moving_particle.velocity += ((f_muscle + moving_particle.mass * self.gravity) / moving_particle.mass) * self.sub_dt
+        moving_particle.velocity += ((f_muscle + moving_particle.mass * GRAVITY) / moving_particle.mass) * self.sub_dt
         moving_particle.position += moving_particle.velocity * self.sub_dt
         
         return penn

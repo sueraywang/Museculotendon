@@ -14,9 +14,9 @@ params = MuscleParams(
     lMopt=0.1,      # optimal muscle length
     lTslack=0.2,    # tendon slack length
     vMmax=10.0,     # maximum contraction velocity
-    alphaMopt=0.0,  # pennation angle at optimal muscle length
+    alphaMopt=0.2,  # pennation angle at optimal muscle length
     fMopt=2.0,      # peak isometric force, originally = 100
-    beta=0.1,       # damping
+    beta=0.9,       # damping
     tauA = 0.01,    # activation constant
     tauD = 0.4,     # deactivation constant
     aMin = 0.01
@@ -25,12 +25,12 @@ params.h = params.lMopt * np.sin(params.alphaMopt)
 
 # Model Size
 model_params = {
-    'num_layer' : 4,
-    'num_width' : 128,
+    'num_layer' : 3,
+    'num_width' : 64,
     'activation_func' : 'tanh',
     'input_size' : 3,
     'output_size' : 1,
-    'model_name' : 'len_act_vel_penn0_model.pth' 
+    'model_name' : 'len_act_vel_model.pth' 
 }
 
 # Physical constants
@@ -43,7 +43,7 @@ SUB_STEPS = 100
 MUSCLE_COMPLIANCE = 1/params.fMopt
 
 # Muscle' initial status
-RENDER_MT = True
+RENDER_MT = False
 if RENDER_MT:
     INITIAL_LENGTH = 0.3
 else:
@@ -52,7 +52,7 @@ XPBD_FREE_POS = np.array([0.5, 1.0, 0.0])
 CLASSIC_FREE_POS = np.array([-0.5, 1.0, 0.0])
 XPBD_FIX_POS = XPBD_FREE_POS + np.array([0.0, INITIAL_LENGTH, 0.0])
 CLASSIC_FIX_POS = CLASSIC_FREE_POS + np.array([0.0, INITIAL_LENGTH, 0.0])
-FREE_PARTICAL_INITIAL_VEL = np.array([0.0, 0.0, 0.0])
+FREE_PARTICAL_INITIAL_VEL = np.array([0.1, 0.1, 0.1])
 
 # Helper functions
 def normalized(vec):
