@@ -1,5 +1,4 @@
 # Ignore the TrainingData folder
-TrainingData/
 TrainedResults/
 
 # Ignore all .log files
