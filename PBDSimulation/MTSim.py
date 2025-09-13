@@ -270,7 +270,7 @@ def main():
         renderer.process_input()
         
         # Calculate activation and pennation for plotting
-        activation = 0.5#np.sin(plotter.plot_time * 20) / 2.0 + 0.5
+        activation = np.sin(plotter.plot_time * 20) / 2.0 + 0.5
         
         # Render the scene
         renderer.render()

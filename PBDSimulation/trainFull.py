@@ -16,37 +16,30 @@ def muscle_force(l_MT, l_M, activation):
     """
     Compute muscle force using FD muscle.muscle_force() method.
     """
-
-    muscle = Muscle(
-        l_m_opt=params['lMopt'], l_t_slack=params['lTslack'], v_m_max=params['vMmax'], 
-        alpha_m_opt=params['alphaMopt'], f_m_opt=params['fMopt'],
-        beta=params['beta'], a_min=params['aMin'], 
-        tau_a=params['tauA'], tau_d=params['tauD']
-    )
     
     # Calculate pennation angle
-    alpha_m = muscle.calc_pennation_angle(l_M)
+    alpha_m = Muscle.calc_pennation_angle(l_M, params)
     
     # Calculate tendon length
     l_T = l_MT - l_M * math.cos(alpha_m)
     
     # Ensure valid tendon length
-    if l_T < params['lTslack']:
-        l_T = params['lTslack']
+    if l_T < params.lTslack:
+        l_T = params.lTslack
         l_M = (l_MT - l_T) / math.cos(alpha_m)
-        alpha_m = muscle.calc_pennation_angle(l_M)
+        alpha_m = Muscle.calc_pennation_angle(l_M, params)
     
     # Calculate muscle velocity using muscle.compute_vel()
-    v_m = muscle.compute_vel(l_M, l_MT, activation, alpha_m)
+    v_m = Muscle.compute_vel(l_M, l_MT, activation, alpha_m, params)
     
     # Calculate muscle force using the muscle's method
-    lMtilde = l_M/params['lMopt']
-    vMtilde = v_m/(params['lMopt'] * params['vMmax'])
-    afl = curves['AFL'].calc_value(lMtilde)
-    pfl = curves['PFL'].calc_value(lMtilde)
-    fv = curves['FV'].calc_value(vMtilde)
+    lMtilde = l_M/params.lMopt
+    vMtilde = v_m/(params.lMopt * params.vMmax)
+    afl = params.curve_afl.calc_value(lMtilde)
+    pfl = params.curve_pfl.calc_value(lMtilde)
+    fv = params.curve_fv.calc_value(vMtilde)
     
-    f_muscle = activation * afl * fv + pfl + params['beta'] * vMtilde
+    f_muscle = activation * afl * fv + pfl + params.beta * vMtilde
     
     return f_muscle * np.cos(alpha_m)
         
@@ -98,7 +91,7 @@ def physics_loss(inputs, forces, grad_l_M_targets, model,
     )[0]
     
     # Convert dC/dl_M to dC/dl_M_tilde using chain rule:
-    dC_dl_M_tilde = dC_dl_M * params['lMopt']
+    dC_dl_M_tilde = dC_dl_M * params.lMopt
     
     # PRIMARY LOSS: f + C * dC/dl_M_tilde = 0
     physics_pred_primary = C * dC_dl_M_tilde
@@ -116,7 +109,7 @@ def physics_loss(inputs, forces, grad_l_M_targets, model,
         
         # Compute NN gradients using constraint formulation
         # df_nn/dl_M = -l_m_opt * [dC/dl_M² + C * d²C/dl_M²]
-        nn_grad_l_M = -params['lMopt'] * (dC_dl_M * dC_dl_M + C * d2C_dl_M2)
+        nn_grad_l_M = -params.lMopt * (dC_dl_M * dC_dl_M + C * d2C_dl_M2)
         
         # SECONDARY LOSS: df/dl_M = nn_grad_l_M
         loss_secondary = F.mse_loss(nn_grad_l_M, grad_l_M_targets)
@@ -141,10 +134,10 @@ def generate_training_data(num_samples=10000):
     """
     
     # Define ranges for input variables
-    l_MT_min = params['lMopt'] * 0.5 + params['lTslack']  # Minimum total length
-    l_MT_max = params['lMopt'] * 1.5 + params['lTslack'] * 1.2  # Maximum total length
-    l_M_min = params['lMopt'] * 0.5   # Minimum muscle fiber length
-    l_M_max = params['lMopt'] * 1.5   # Maximum muscle fiber length
+    l_MT_min = params.lMopt * 0.5 + params.lTslack  # Minimum total length
+    l_MT_max = params.lMopt * 1.5 + params.lTslack * 1.2  # Maximum total length
+    l_M_min = params.lMopt * 0.5   # Minimum muscle fiber length
+    l_M_max = params.lMopt * 1.5   # Maximum muscle fiber length
     activation_min, activation_max = 0.0, 1.0
     
     # Arrays to store results

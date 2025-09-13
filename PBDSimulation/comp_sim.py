@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
-df = pd.read_csv('precomputed_model_100steps.csv')
+df = pd.read_csv('Results/precomputed_model_100steps.csv')
 
 time_points = df['time']
 xpbd_lengths = df['xpbd_length']
@@ -27,5 +27,5 @@ axs[1].set_title('Absolute Difference in Positions')
 axs[1].grid(True)
 
 plt.tight_layout()
-plt.savefig("precomputed_model_100steps")
+plt.savefig("Results/precomputed_model_100steps")
 plt.show()
