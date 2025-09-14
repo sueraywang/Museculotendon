@@ -8,7 +8,6 @@ class SimulationPlotter:
         self.MT = MT
         self.plot_time = 0
         self.time_data = []
-        self.vel_data = []
         self.xpbd_over_time = []
         self.classic_over_time = []
         self.activation_over_time = []
@@ -55,7 +54,6 @@ class SimulationPlotter:
         self.xpbd_over_time.append(xpbd_length)
         self.classic_over_time.append(classic_length)
         self.time_data.append(self.plot_time)
-        self.vel_data.append(np.linalg.norm(simulator.particles[3].velocity))
         self.activation_over_time.append(activation)
         self.pennation_over_time.append(simulator.penn)
         self.plot_time += dt
@@ -72,7 +70,7 @@ class SimulationPlotter:
         self.axs[0].set_ylim(
             0.0, max(0.15, max(self.xpbd_over_time), max(self.classic_over_time)))
         self.axs[1].set_ylim(-0.1, 1.1)
-        self.axs[2].set_ylim(0.0, max(self.pennation_over_time))
+        self.axs[2].set_ylim(0.0, max(0.5, max(self.pennation_over_time)))
         
         plt.draw()
         plt.pause(dt)

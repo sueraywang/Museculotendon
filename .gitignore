@@ -3,3 +3,4 @@ TrainedResults/
 
 # Ignore all .log files
 *.log
+*.npz

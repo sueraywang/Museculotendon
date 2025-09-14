@@ -195,7 +195,7 @@ def train_model(model, train_loader, valid_loader, num_epochs=100, early_stop_pa
     # Initialize TensorBoard writer if enabled
     writer = None
     if use_tensorboard:
-        model_type = 'LenActVelPenn' if use_pennation else 'LenActVel'
+        model_type = 'fullForce' if use_pennation else 'noPenn'
         log_dir = os.path.join('TrainedResults/Muscles', model_type, runTime)
         writer = SummaryWriter(log_dir)
     
